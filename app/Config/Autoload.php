@@ -1,8 +1,21 @@
 <?php
 
+/**
+ * File Path: app/Config/Autoload.php
+ * 
+ * Autoload Configuration
+ * Mengkonfigurasi autoloading untuk libraries, helpers, dan namespaces
+ * 
+ * @package    SIB-K
+ * @subpackage Config
+ * @category   Configuration
+ * @author     Development Team
+ * @created    2025-01-01
+ */
+
 namespace Config;
 
-use CodeIgniter\Config\AutoloadConfig;
+use CodeIgniter\Config\BaseConfig;
 
 /**
  * -------------------------------------------------------------------
@@ -14,11 +27,8 @@ use CodeIgniter\Config\AutoloadConfig;
  *
  * NOTE: If you use an identical key in $psr4 or $classmap, then
  *       the values in this file will overwrite the framework's values.
- *
- * NOTE: This class is required prior to Autoloader instantiation,
- *       and does not extend BaseConfig.
  */
-class Autoload extends AutoloadConfig
+class Autoload extends BaseConfig
 {
     /**
      * -------------------------------------------------------------------
@@ -28,17 +38,23 @@ class Autoload extends AutoloadConfig
      * their location on the file system. These are used by the autoloader
      * to locate files the first time they have been instantiated.
      *
-     * The 'Config' (APPPATH . 'Config') and 'CodeIgniter' (SYSTEMPATH) are
-     * already mapped for you.
-     *
-     * You may change the name of the 'App' namespace if you wish,
+     * The '/app' and '/system' directories are already mapped for you.
+     * you may change the name of the 'App' namespace if you wish,
      * but this should be done prior to creating any namespaced classes,
      * else you will need to modify all of those classes for this to work.
      *
-     * @var array<string, list<string>|string>
+     * Prototype:
+     *   $psr4 = [
+     *       'CodeIgniter' => SYSTEMPATH,
+     *       'App'         => APPPATH
+     *   ];
+     *
+     * @var array<string, array<int, string>|string>
+     * @phpstan-var array<string, string|list<string>>
      */
     public $psr4 = [
-        APP_NAMESPACE => APPPATH,
+        APP_NAMESPACE => APPPATH, // For custom app namespace
+        'Config'      => APPPATH . 'Config',
     ];
 
     /**
@@ -73,7 +89,8 @@ class Autoload extends AutoloadConfig
      *       '/path/to/my/file.php',
      *   ];
      *
-     * @var list<string>
+     * @var array<int, string>
+     * @phpstan-var list<string>
      */
     public $files = [];
 
@@ -86,7 +103,55 @@ class Autoload extends AutoloadConfig
      *       'form',
      *   ];
      *
-     * @var list<string>
+     * @var array<int, string>
+     * @phpstan-var list<string>
      */
-    public $helpers = [];
+    public $helpers = [
+        'url',
+        'form',
+        'text',
+        'date',
+        'number',
+        'filesystem',
+        'cookie',
+        'security',
+    ];
+
+    public function __construct()
+    {
+        parent::__construct();
+
+        // Additional PSR4 namespaces for the application
+        $this->psr4 = array_merge($this->psr4, [
+            // Application namespaces
+            'App\Models'      => APPPATH . 'Models',
+            'App\Controllers' => APPPATH . 'Controllers',
+            'App\Libraries'   => APPPATH . 'Libraries',
+            'App\Filters'     => APPPATH . 'Filters',
+            'App\Entities'    => APPPATH . 'Entities',
+            'App\Services'    => APPPATH . 'Services',
+        ]);
+
+        /**
+         * -------------------------------------------------------------------
+         * Auto-load Custom Helpers
+         * -------------------------------------------------------------------
+         * Load custom helper files that will be used throughout the application
+         */
+        if (file_exists(APPPATH . 'Helpers/custom_helper.php')) {
+            $this->helpers[] = 'custom';
+        }
+
+        if (file_exists(APPPATH . 'Helpers/auth_helper.php')) {
+            $this->helpers[] = 'auth';
+        }
+
+        if (file_exists(APPPATH . 'Helpers/notification_helper.php')) {
+            $this->helpers[] = 'notification';
+        }
+
+        if (file_exists(APPPATH . 'Helpers/validation_helper.php')) {
+            $this->helpers[] = 'validation';
+        }
+    }
 }
