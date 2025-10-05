@@ -250,3 +250,136 @@ in SYSTEMPATH\Cache\Handlers\FileHandler.php on line 66.
 23 SYSTEMPATH\Boot.php(67): CodeIgniter\Boot::initializeCodeIgniter()
 24 FCPATH\index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
 25 SYSTEMPATH\rewrite.php(44): require_once('C:\\laragon\\www\\sib-k\\public\\index.php')
+CRITICAL - 2025-10-05 12:23:18 --> TypeError: trim(): Argument #1 ($string) must be of type string, array given
+[Method: GET, Route: /]
+in SYSTEMPATH\Filters\Filters.php on line 918.
+ 1 SYSTEMPATH\Filters\Filters.php(918): trim([...], '/ ')
+ 2 SYSTEMPATH\Filters\Filters.php(881): CodeIgniter\Filters\Filters->checkPseudoRegex('', [...])
+ 3 SYSTEMPATH\Filters\Filters.php(791): CodeIgniter\Filters\Filters->pathApplies('', [...])
+ 4 SYSTEMPATH\Filters\Filters.php(474): CodeIgniter\Filters\Filters->processFilters('')
+ 5 SYSTEMPATH\Filters\Filters.php(218): CodeIgniter\Filters\Filters->initialize('')
+ 6 SYSTEMPATH\CodeIgniter.php(479): CodeIgniter\Filters\Filters->run('', 'before')
+ 7 SYSTEMPATH\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+ 8 SYSTEMPATH\Boot.php(363): CodeIgniter\CodeIgniter->run()
+ 9 SYSTEMPATH\Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+10 FCPATH\index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+11 SYSTEMPATH\rewrite.php(44): require_once('C:\\laragon\\www\\sib-k\\public\\index.php')
+DEBUG - 2025-10-05 12:24:09 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2025-10-05 12:24:48 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+ERROR - 2025-10-05 12:25:20 --> Error connecting to the database: TypeError: mysqli::real_connect(): Argument #5 ($port) must be of type ?int, string given in C:\laragon\www\sib-k\system\Database\MySQLi\Connection.php:201
+Stack trace:
+#0 C:\laragon\www\sib-k\system\Database\MySQLi\Connection.php(201): mysqli->real_connect('localhost', 'root', Object(SensitiveParameterValue), 'sibk_mapersis31', '3306', '', 0)
+#1 C:\laragon\www\sib-k\system\Database\BaseConnection.php(419): CodeIgniter\Database\MySQLi\Connection->connect(false)
+#2 C:\laragon\www\sib-k\system\Database\BaseConnection.php(614): CodeIgniter\Database\BaseConnection->initialize()
+#3 C:\laragon\www\sib-k\system\Database\BaseConnection.php(1525): CodeIgniter\Database\BaseConnection->query('SHOW TABLES FRO...')
+#4 C:\laragon\www\sib-k\system\Database\BaseConnection.php(1545): CodeIgniter\Database\BaseConnection->listTables()
+#5 C:\laragon\www\sib-k\system\Database\MigrationRunner.php(768): CodeIgniter\Database\BaseConnection->tableExists('migrations')
+#6 C:\laragon\www\sib-k\system\Database\MigrationRunner.php(162): CodeIgniter\Database\MigrationRunner->ensureTable()
+#7 C:\laragon\www\sib-k\system\Commands\Database\Migrate.php(85): CodeIgniter\Database\MigrationRunner->latest(NULL)
+#8 C:\laragon\www\sib-k\system\CLI\Commands.php(74): CodeIgniter\Commands\Database\Migrate->run(Array)
+#9 C:\laragon\www\sib-k\system\CLI\Console.php(47): CodeIgniter\CLI\Commands->run('migrate', Array)
+#10 C:\laragon\www\sib-k\system\Boot.php(388): CodeIgniter\CLI\Console->run()
+#11 C:\laragon\www\sib-k\system\Boot.php(133): CodeIgniter\Boot::runCommand(Object(CodeIgniter\CLI\Console))
+#12 C:\laragon\www\sib-k\spark(87): CodeIgniter\Boot::bootSpark(Object(Config\Paths))
+#13 {main}
+
+Next CodeIgniter\Database\Exceptions\DatabaseException: mysqli::real_connect(): Argument #5 ($port) must be of type ?int, string given in C:\laragon\www\sib-k\system\Database\MySQLi\Connection.php:246
+Stack trace:
+#0 C:\laragon\www\sib-k\system\Database\BaseConnection.php(419): CodeIgniter\Database\MySQLi\Connection->connect(false)
+#1 C:\laragon\www\sib-k\system\Database\BaseConnection.php(614): CodeIgniter\Database\BaseConnection->initialize()
+#2 C:\laragon\www\sib-k\system\Database\BaseConnection.php(1525): CodeIgniter\Database\BaseConnection->query('SHOW TABLES FRO...')
+#3 C:\laragon\www\sib-k\system\Database\BaseConnection.php(1545): CodeIgniter\Database\BaseConnection->listTables()
+#4 C:\laragon\www\sib-k\system\Database\MigrationRunner.php(768): CodeIgniter\Database\BaseConnection->tableExists('migrations')
+#5 C:\laragon\www\sib-k\system\Database\MigrationRunner.php(162): CodeIgniter\Database\MigrationRunner->ensureTable()
+#6 C:\laragon\www\sib-k\system\Commands\Database\Migrate.php(85): CodeIgniter\Database\MigrationRunner->latest(NULL)
+#7 C:\laragon\www\sib-k\system\CLI\Commands.php(74): CodeIgniter\Commands\Database\Migrate->run(Array)
+#8 C:\laragon\www\sib-k\system\CLI\Console.php(47): CodeIgniter\CLI\Commands->run('migrate', Array)
+#9 C:\laragon\www\sib-k\system\Boot.php(388): CodeIgniter\CLI\Console->run()
+#10 C:\laragon\www\sib-k\system\Boot.php(133): CodeIgniter\Boot::runCommand(Object(CodeIgniter\CLI\Console))
+#11 C:\laragon\www\sib-k\spark(87): CodeIgniter\Boot::bootSpark(Object(Config\Paths))
+#12 {main}
+ERROR - 2025-10-05 12:28:40 --> mysqli_sql_exception: Cannot truncate a table referenced in a foreign key constraint (`sibk_mapersis31`.`role_permissions`, CONSTRAINT `role_permissions_role_id_foreign`) in C:\laragon\www\sib-k\system\Database\MySQLi\Connection.php:327
+Stack trace:
+#0 C:\laragon\www\sib-k\system\Database\MySQLi\Connection.php(327): mysqli->query('TRUNCATE `roles...', 0)
+#1 C:\laragon\www\sib-k\system\Database\BaseConnection.php(729): CodeIgniter\Database\MySQLi\Connection->execute('TRUNCATE `roles...')
+#2 C:\laragon\www\sib-k\system\Database\BaseConnection.php(646): CodeIgniter\Database\BaseConnection->simpleQuery('TRUNCATE `roles...')
+#3 C:\laragon\www\sib-k\system\Database\BaseBuilder.php(2773): CodeIgniter\Database\BaseConnection->query('TRUNCATE `roles...', NULL, false)
+#4 C:\laragon\www\sib-k\app\Database\Seeds\RoleSeeder.php(57): CodeIgniter\Database\BaseBuilder->truncate()
+#5 C:\laragon\www\sib-k\system\Database\Seeder.php(149): App\Database\Seeds\RoleSeeder->run()
+#6 C:\laragon\www\sib-k\system\Commands\Database\Seed.php(79): CodeIgniter\Database\Seeder->call('App\\Database\\Se...')
+#7 C:\laragon\www\sib-k\system\CLI\Commands.php(74): CodeIgniter\Commands\Database\Seed->run(Array)
+#8 C:\laragon\www\sib-k\system\CLI\Console.php(47): CodeIgniter\CLI\Commands->run('db:seed', Array)
+#9 C:\laragon\www\sib-k\system\Boot.php(388): CodeIgniter\CLI\Console->run()
+#10 C:\laragon\www\sib-k\system\Boot.php(133): CodeIgniter\Boot::runCommand(Object(CodeIgniter\CLI\Console))
+#11 C:\laragon\www\sib-k\spark(87): CodeIgniter\Boot::bootSpark(Object(Config\Paths))
+#12 {main}
+ERROR - 2025-10-05 12:29:16 --> mysqli_sql_exception: Cannot truncate a table referenced in a foreign key constraint (`sibk_mapersis31`.`role_permissions`, CONSTRAINT `role_permissions_role_id_foreign`) in C:\laragon\www\sib-k\system\Database\MySQLi\Connection.php:327
+Stack trace:
+#0 C:\laragon\www\sib-k\system\Database\MySQLi\Connection.php(327): mysqli->query('TRUNCATE `roles...', 0)
+#1 C:\laragon\www\sib-k\system\Database\BaseConnection.php(729): CodeIgniter\Database\MySQLi\Connection->execute('TRUNCATE `roles...')
+#2 C:\laragon\www\sib-k\system\Database\BaseConnection.php(646): CodeIgniter\Database\BaseConnection->simpleQuery('TRUNCATE `roles...')
+#3 C:\laragon\www\sib-k\system\Database\BaseBuilder.php(2773): CodeIgniter\Database\BaseConnection->query('TRUNCATE `roles...', NULL, false)
+#4 C:\laragon\www\sib-k\app\Database\Seeds\RoleSeeder.php(57): CodeIgniter\Database\BaseBuilder->truncate()
+#5 C:\laragon\www\sib-k\system\Database\Seeder.php(149): App\Database\Seeds\RoleSeeder->run()
+#6 C:\laragon\www\sib-k\app\Database\Seeds\DatabaseSeeder.php(19): CodeIgniter\Database\Seeder->call('App\\Database\\Se...')
+#7 C:\laragon\www\sib-k\system\Database\Seeder.php(149): App\Database\Seeds\DatabaseSeeder->run()
+#8 C:\laragon\www\sib-k\system\Commands\Database\Seed.php(79): CodeIgniter\Database\Seeder->call('App\\Database\\Se...')
+#9 C:\laragon\www\sib-k\system\CLI\Commands.php(74): CodeIgniter\Commands\Database\Seed->run(Array)
+#10 C:\laragon\www\sib-k\system\CLI\Console.php(47): CodeIgniter\CLI\Commands->run('db:seed', Array)
+#11 C:\laragon\www\sib-k\system\Boot.php(388): CodeIgniter\CLI\Console->run()
+#12 C:\laragon\www\sib-k\system\Boot.php(133): CodeIgniter\Boot::runCommand(Object(CodeIgniter\CLI\Console))
+#13 C:\laragon\www\sib-k\spark(87): CodeIgniter\Boot::bootSpark(Object(Config\Paths))
+#14 {main}
+ERROR - 2025-10-05 12:29:34 --> mysqli_sql_exception: Cannot truncate a table referenced in a foreign key constraint (`sibk_mapersis31`.`role_permissions`, CONSTRAINT `role_permissions_role_id_foreign`) in C:\laragon\www\sib-k\system\Database\MySQLi\Connection.php:327
+Stack trace:
+#0 C:\laragon\www\sib-k\system\Database\MySQLi\Connection.php(327): mysqli->query('TRUNCATE `roles...', 0)
+#1 C:\laragon\www\sib-k\system\Database\BaseConnection.php(729): CodeIgniter\Database\MySQLi\Connection->execute('TRUNCATE `roles...')
+#2 C:\laragon\www\sib-k\system\Database\BaseConnection.php(646): CodeIgniter\Database\BaseConnection->simpleQuery('TRUNCATE `roles...')
+#3 C:\laragon\www\sib-k\system\Database\BaseBuilder.php(2773): CodeIgniter\Database\BaseConnection->query('TRUNCATE `roles...', NULL, false)
+#4 C:\laragon\www\sib-k\app\Database\Seeds\RoleSeeder.php(57): CodeIgniter\Database\BaseBuilder->truncate()
+#5 C:\laragon\www\sib-k\system\Database\Seeder.php(149): App\Database\Seeds\RoleSeeder->run()
+#6 C:\laragon\www\sib-k\system\Commands\Database\Seed.php(79): CodeIgniter\Database\Seeder->call('App\\Database\\Se...')
+#7 C:\laragon\www\sib-k\system\CLI\Commands.php(74): CodeIgniter\Commands\Database\Seed->run(Array)
+#8 C:\laragon\www\sib-k\system\CLI\Console.php(47): CodeIgniter\CLI\Commands->run('db:seed', Array)
+#9 C:\laragon\www\sib-k\system\Boot.php(388): CodeIgniter\CLI\Console->run()
+#10 C:\laragon\www\sib-k\system\Boot.php(133): CodeIgniter\Boot::runCommand(Object(CodeIgniter\CLI\Console))
+#11 C:\laragon\www\sib-k\spark(87): CodeIgniter\Boot::bootSpark(Object(Config\Paths))
+#12 {main}
+ERROR - 2025-10-05 12:32:05 --> mysqli_sql_exception: Cannot truncate a table referenced in a foreign key constraint (`sibk_mapersis31`.`role_permissions`, CONSTRAINT `role_permissions_permission_id_foreign`) in C:\laragon\www\sib-k\system\Database\MySQLi\Connection.php:327
+Stack trace:
+#0 C:\laragon\www\sib-k\system\Database\MySQLi\Connection.php(327): mysqli->query('TRUNCATE `permi...', 0)
+#1 C:\laragon\www\sib-k\system\Database\BaseConnection.php(729): CodeIgniter\Database\MySQLi\Connection->execute('TRUNCATE `permi...')
+#2 C:\laragon\www\sib-k\system\Database\BaseConnection.php(646): CodeIgniter\Database\BaseConnection->simpleQuery('TRUNCATE `permi...')
+#3 C:\laragon\www\sib-k\system\Database\BaseBuilder.php(2773): CodeIgniter\Database\BaseConnection->query('TRUNCATE `permi...', NULL, false)
+#4 C:\laragon\www\sib-k\app\Database\Seeds\PermissionSeeder.php(35): CodeIgniter\Database\BaseBuilder->truncate()
+#5 C:\laragon\www\sib-k\system\Database\Seeder.php(149): App\Database\Seeds\PermissionSeeder->run()
+#6 C:\laragon\www\sib-k\app\Database\Seeds\DatabaseSeeder.php(24): CodeIgniter\Database\Seeder->call('App\\Database\\Se...')
+#7 C:\laragon\www\sib-k\system\Database\Seeder.php(149): App\Database\Seeds\DatabaseSeeder->run()
+#8 C:\laragon\www\sib-k\system\Commands\Database\Seed.php(79): CodeIgniter\Database\Seeder->call('App\\Database\\Se...')
+#9 C:\laragon\www\sib-k\system\CLI\Commands.php(74): CodeIgniter\Commands\Database\Seed->run(Array)
+#10 C:\laragon\www\sib-k\system\CLI\Console.php(47): CodeIgniter\CLI\Commands->run('db:seed', Array)
+#11 C:\laragon\www\sib-k\system\Boot.php(388): CodeIgniter\CLI\Console->run()
+#12 C:\laragon\www\sib-k\system\Boot.php(133): CodeIgniter\Boot::runCommand(Object(CodeIgniter\CLI\Console))
+#13 C:\laragon\www\sib-k\spark(87): CodeIgniter\Boot::bootSpark(Object(Config\Paths))
+#14 {main}
+ERROR - 2025-10-05 12:33:23 --> mysqli_sql_exception: Cannot truncate a table referenced in a foreign key constraint (`sibk_mapersis31`.`role_permissions`, CONSTRAINT `role_permissions_permission_id_foreign`) in C:\laragon\www\sib-k\system\Database\MySQLi\Connection.php:327
+Stack trace:
+#0 C:\laragon\www\sib-k\system\Database\MySQLi\Connection.php(327): mysqli->query('TRUNCATE `permi...', 0)
+#1 C:\laragon\www\sib-k\system\Database\BaseConnection.php(729): CodeIgniter\Database\MySQLi\Connection->execute('TRUNCATE `permi...')
+#2 C:\laragon\www\sib-k\system\Database\BaseConnection.php(646): CodeIgniter\Database\BaseConnection->simpleQuery('TRUNCATE `permi...')
+#3 C:\laragon\www\sib-k\system\Database\BaseBuilder.php(2773): CodeIgniter\Database\BaseConnection->query('TRUNCATE `permi...', NULL, false)
+#4 C:\laragon\www\sib-k\app\Database\Seeds\PermissionSeeder.php(35): CodeIgniter\Database\BaseBuilder->truncate()
+#5 C:\laragon\www\sib-k\system\Database\Seeder.php(149): App\Database\Seeds\PermissionSeeder->run()
+#6 C:\laragon\www\sib-k\system\Commands\Database\Seed.php(79): CodeIgniter\Database\Seeder->call('App\\Database\\Se...')
+#7 C:\laragon\www\sib-k\system\CLI\Commands.php(74): CodeIgniter\Commands\Database\Seed->run(Array)
+#8 C:\laragon\www\sib-k\system\CLI\Console.php(47): CodeIgniter\CLI\Commands->run('db:seed', Array)
+#9 C:\laragon\www\sib-k\system\Boot.php(388): CodeIgniter\CLI\Console->run()
+#10 C:\laragon\www\sib-k\system\Boot.php(133): CodeIgniter\Boot::runCommand(Object(CodeIgniter\CLI\Console))
+#11 C:\laragon\www\sib-k\spark(87): CodeIgniter\Boot::bootSpark(Object(Config\Paths))
+#12 {main}
+DEBUG - 2025-10-05 12:37:35 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2025-10-05 12:37:47 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+INFO - 2025-10-05 12:37:47 --> CSRF token verified.
+DEBUG - 2025-10-05 12:37:47 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2025-10-05 12:41:02 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2025-10-05 12:41:02 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.

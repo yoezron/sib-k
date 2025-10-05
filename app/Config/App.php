@@ -298,6 +298,18 @@ class App extends BaseConfig
 
     /**
      * --------------------------------------------------------------------------
+     * Allowed Hostnames
+     * --------------------------------------------------------------------------
+     *
+     * If you want to allow only specific hostnames to access your application,
+     * you can list them here. By default, all hostnames are allowed.
+     *
+     * @var list<string>
+     */
+    public array $allowedHostnames = [];
+
+    /**
+     * --------------------------------------------------------------------------
      * CSRF Token Name
      * --------------------------------------------------------------------------
      *

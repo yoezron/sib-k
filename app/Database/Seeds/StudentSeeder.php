@@ -52,7 +52,7 @@ class StudentSeeder extends Seeder
 
         // Truncate table first
         $this->db->query('SET FOREIGN_KEY_CHECKS=0');
-        $this->db->table('students')->truncate();
+        $this->db->table('students')->emptyTable();
         $this->db->query('SET FOREIGN_KEY_CHECKS=1');
 
         // Insert batch data

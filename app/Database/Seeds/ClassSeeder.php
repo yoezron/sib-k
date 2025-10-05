@@ -148,7 +148,7 @@ class ClassSeeder extends Seeder
 
         // Truncate table first
         $this->db->query('SET FOREIGN_KEY_CHECKS=0');
-        $this->db->table('classes')->truncate();
+        $this->db->table('classes')->emptyTable();
         $this->db->query('SET FOREIGN_KEY_CHECKS=1');
 
         // Insert batch data

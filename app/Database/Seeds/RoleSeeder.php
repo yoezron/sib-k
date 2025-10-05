@@ -53,8 +53,8 @@ class RoleSeeder extends Seeder
             ],
         ];
 
-        // Truncate table first
-        $this->db->table('roles')->truncate();
+        // Delete existing data (can't use truncate due to foreign keys)
+        $this->db->table('roles')->emptyTable();
 
         // Insert batch data
         $this->db->table('roles')->insertBatch($data);

@@ -32,7 +32,7 @@ class PermissionSeeder extends Seeder
         ];
 
         // Truncate table first
-        $this->db->table('permissions')->truncate();
+        $this->db->table('permissions')->emptyTable();
 
         // Insert batch data
         $this->db->table('permissions')->insertBatch($data);

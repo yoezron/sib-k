@@ -152,7 +152,7 @@ class UserSeeder extends Seeder
 
         // Truncate table first (disable foreign key checks)
         $this->db->query('SET FOREIGN_KEY_CHECKS=0');
-        $this->db->table('users')->truncate();
+        $this->db->table('users')->emptyTable();
         $this->db->query('SET FOREIGN_KEY_CHECKS=1');
 
         // Insert batch data

@@ -43,7 +43,7 @@ class AcademicYearSeeder extends Seeder
 
         // Truncate table first
         $this->db->query('SET FOREIGN_KEY_CHECKS=0');
-        $this->db->table('academic_years')->truncate();
+        $this->db->table('academic_years')->emptyTable();
         $this->db->query('SET FOREIGN_KEY_CHECKS=1');
 
         // Insert batch data

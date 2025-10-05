@@ -70,7 +70,7 @@ class RolePermissionSeeder extends Seeder
         }
 
         // Truncate table first
-        $this->db->table('role_permissions')->truncate();
+        $this->db->table('role_permissions')->emptyTable();
 
         // Insert batch data
         $this->db->table('role_permissions')->insertBatch($data);

@@ -108,17 +108,5 @@ class Filters extends BaseConfig
                 'profile/*',
             ],
         ],
-
-        // Role-based filters
-        'role' => [
-            'before' => [
-                'admin/*' => ['arguments' => ['Admin']],
-                'koordinator/*' => ['arguments' => ['Koordinator BK']],
-                'counselor/*' => ['arguments' => ['Guru BK', 'Koordinator BK']],
-                'homeroom/*' => ['arguments' => ['Wali Kelas']],
-                'student/*' => ['arguments' => ['Siswa']],
-                'parent/*' => ['arguments' => ['Orang Tua']],
-            ],
-        ],
     ];
 }

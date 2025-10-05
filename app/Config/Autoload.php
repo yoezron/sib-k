@@ -15,7 +15,7 @@
 
 namespace Config;
 
-use CodeIgniter\Config\BaseConfig;
+use CodeIgniter\Config\AutoloadConfig;
 
 /**
  * -------------------------------------------------------------------
@@ -28,7 +28,7 @@ use CodeIgniter\Config\BaseConfig;
  * NOTE: If you use an identical key in $psr4 or $classmap, then
  *       the values in this file will overwrite the framework's values.
  */
-class Autoload extends BaseConfig
+class Autoload extends AutoloadConfig
 {
     /**
      * -------------------------------------------------------------------
@@ -131,27 +131,5 @@ class Autoload extends BaseConfig
             'App\Entities'    => APPPATH . 'Entities',
             'App\Services'    => APPPATH . 'Services',
         ]);
-
-        /**
-         * -------------------------------------------------------------------
-         * Auto-load Custom Helpers
-         * -------------------------------------------------------------------
-         * Load custom helper files that will be used throughout the application
-         */
-        if (file_exists(APPPATH . 'Helpers/custom_helper.php')) {
-            $this->helpers[] = 'custom';
-        }
-
-        if (file_exists(APPPATH . 'Helpers/auth_helper.php')) {
-            $this->helpers[] = 'auth';
-        }
-
-        if (file_exists(APPPATH . 'Helpers/notification_helper.php')) {
-            $this->helpers[] = 'notification';
-        }
-
-        if (file_exists(APPPATH . 'Helpers/validation_helper.php')) {
-            $this->helpers[] = 'validation';
-        }
     }
 }
