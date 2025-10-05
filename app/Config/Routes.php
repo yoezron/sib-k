@@ -100,8 +100,11 @@ $routes->group('admin', ['filter' => 'auth', 'namespace' => 'App\Controllers\Adm
     $routes->post('students/update/(:num)', 'StudentController::update/$1');
     $routes->post('students/delete/(:num)', 'StudentController::delete/$1');
     $routes->get('students/detail/(:num)', 'StudentController::detail/$1');
+
+    // Import & Export
     $routes->get('students/import', 'StudentController::import');
     $routes->post('students/do-import', 'StudentController::doImport');
+    $routes->get('students/download-template', 'StudentController::downloadTemplate');
     $routes->get('students/export', 'StudentController::export');
 
     // System Settings
@@ -112,6 +115,10 @@ $routes->group('admin', ['filter' => 'auth', 'namespace' => 'App\Controllers\Adm
     $routes->get('logs', 'LogController::index');
     $routes->get('logs/detail/(:num)', 'LogController::detail/$1');
     $routes->post('logs/clear', 'LogController::clear');
+
+    // AJAX Routes
+    $routes->get('students/search', 'StudentController::search');
+    $routes->get('students/by-class/(:num)', 'StudentController::getByClass/$1');
 });
 
 /*
