@@ -21,6 +21,7 @@ use CodeIgniter\Router\RouteCollection;
 
 // Default controller
 $routes->get('/', 'Home::index');
+$routes->get('test', 'Test::index');
 
 // Profile route
 $routes->get('profile', 'ProfileController::index');
@@ -39,6 +40,7 @@ $routes->group('', ['filter' => 'csrf'], function ($routes) {
     $routes->get('forgot-password', 'Auth\AuthController::forgotPassword');
     $routes->post('forgot-password', 'Auth\AuthController::sendResetLink');
 });
+$routes->get('verify/(:segment)', 'Auth\AuthController::verify/$1');
 
 /*
 |--------------------------------------------------------------------------
@@ -59,6 +61,11 @@ $routes->group('admin', ['filter' => 'auth', 'namespace' => 'App\Controllers\Adm
     $routes->post('users/update/(:num)', 'UserController::update/$1');
     $routes->post('users/delete/(:num)', 'UserController::delete/$1');
     $routes->post('users/toggle-active/(:num)', 'UserController::toggleActive/$1');
+    $routes->post('users/reset-password/(:num)', 'UserController::resetPassword/$1');
+    $routes->post('users/upload-photo/(:num)', 'UserController::uploadPhoto/$1');
+    $routes->get('users/export', 'UserController::export');
+    $routes->get('users/search', 'UserController::search');
+
 
     // Role Management
     $routes->get('roles', 'RoleController::index');
@@ -70,14 +77,6 @@ $routes->group('admin', ['filter' => 'auth', 'namespace' => 'App\Controllers\Adm
     $routes->get('roles/permissions/(:num)', 'RoleController::permissions/$1');
     $routes->post('roles/assign-permissions/(:num)', 'RoleController::assignPermissions/$1');
 
-    // Permission Management
-    $routes->get('permissions', 'PermissionController::index');
-    $routes->get('permissions/create', 'PermissionController::create');
-    $routes->post('permissions/store', 'PermissionController::store');
-    $routes->get('permissions/edit/(:num)', 'PermissionController::edit/$1');
-    $routes->post('permissions/update/(:num)', 'PermissionController::update/$1');
-    $routes->post('permissions/delete/(:num)', 'PermissionController::delete/$1');
-
     // Academic Year Management
     $routes->get('academic-years', 'AcademicYearController::index');
     $routes->get('academic-years/create', 'AcademicYearController::create');
@@ -86,6 +85,9 @@ $routes->group('admin', ['filter' => 'auth', 'namespace' => 'App\Controllers\Adm
     $routes->post('academic-years/update/(:num)', 'AcademicYearController::update/$1');
     $routes->post('academic-years/delete/(:num)', 'AcademicYearController::delete/$1');
     $routes->post('academic-years/set-active/(:num)', 'AcademicYearController::setActive/$1');
+    $routes->get('academic-years/get-suggested', 'AcademicYearController::getSuggested');
+    $routes->get('academic-years/check-overlap', 'AcademicYearController::checkOverlap');
+    $routes->get('academic-years/generate-year-name', 'AcademicYearController::generateYearName');
 
     // Class Management
     $routes->get('classes', 'ClassController::index');
@@ -95,6 +97,10 @@ $routes->group('admin', ['filter' => 'auth', 'namespace' => 'App\Controllers\Adm
     $routes->post('classes/update/(:num)', 'ClassController::update/$1');
     $routes->post('classes/delete/(:num)', 'ClassController::delete/$1');
     $routes->get('classes/detail/(:num)', 'ClassController::detail/$1');
+    $routes->get('classes/get-suggested-name', 'ClassController::getSuggestedName');
+    $routes->post('classes/assign-homeroom/(:num)', 'ClassController::assignHomeroom/$1');
+    $routes->post('classes/assign-counselor/(:num)', 'ClassController::assignCounselor/$1');
+
 
     // Student Management
     $routes->get('students', 'StudentController::index');
@@ -104,57 +110,29 @@ $routes->group('admin', ['filter' => 'auth', 'namespace' => 'App\Controllers\Adm
     $routes->get('students/edit/(:num)', 'StudentController::edit/$1');
     $routes->post('students/update/(:num)', 'StudentController::update/$1');
     $routes->post('students/delete/(:num)', 'StudentController::delete/$1');
-    $routes->get('students/detail/(:num)', 'StudentController::detail/$1');
 
     // Import & Export
+    $routes->post('students/change-class/(:num)', 'StudentController::changeClass/$1');
+    $routes->get('students/export', 'StudentController::export');
+    $routes->get('students/search', 'StudentController::search');
+    $routes->get('students/by-class/(:num)', 'StudentController::getByClass/$1');
     $routes->get('students/import', 'StudentController::import');
     $routes->post('students/do-import', 'StudentController::doImport');
     $routes->get('students/download-template', 'StudentController::downloadTemplate');
-    $routes->get('students/export', 'StudentController::export');
+    $routes->get('students/stats', 'StudentController::getStats');
+
 
     // System Settings
     $routes->get('settings', 'SettingController::index');
     $routes->post('settings/update', 'SettingController::update');
-
-    // Activity Logs
-    $routes->get('logs', 'LogController::index');
-    $routes->get('logs/detail/(:num)', 'LogController::detail/$1');
-    $routes->post('logs/clear', 'LogController::clear');
-
-    // AJAX Routes
-    $routes->get('students/search', 'StudentController::search');
-    $routes->get('students/by-class/(:num)', 'StudentController::getByClass/$1');
 });
 
 /*
 |--------------------------------------------------------------------------
 | Koordinator BK Routes
 |--------------------------------------------------------------------------
-| Filter: auth, role:Koordinator BK
-*/
-$routes->group('koordinator', ['filter' => 'auth', 'namespace' => 'App\Controllers\Koordinator'], function ($routes) {
-    // Dashboard
-    $routes->get('dashboard', 'DashboardController::index');
 
-    // User Management (Limited)
-    $routes->get('users', 'UserController::index');
-    $routes->get('users/create', 'UserController::create');
-    $routes->post('users/store', 'UserController::store');
 
-    // Academic Data
-    $routes->get('academic-years', 'AcademicYearController::index');
-    $routes->get('classes', 'ClassController::index');
-    $routes->get('students', 'StudentController::index');
-
-    // Counseling Management
-    $routes->get('sessions', 'SessionController::index');
-    $routes->get('cases', 'CaseController::index');
-    $routes->get('assessments', 'AssessmentController::index');
-
-    // Reports
-    $routes->get('reports', 'ReportController::index');
-    $routes->get('reports/generate', 'ReportController::generate');
-});
 
 /*
 |--------------------------------------------------------------------------
@@ -165,20 +143,19 @@ $routes->group('koordinator', ['filter' => 'auth', 'namespace' => 'App\Controlle
 $routes->group('counselor', ['filter' => 'auth', 'namespace' => 'App\Controllers\Counselor'], function ($routes) {
     // Dashboard
     $routes->get('dashboard', 'DashboardController::index');
+    $routes->get('dashboard/getQuickStats', 'DashboardController::getQuickStats');
 
-    // Student Data (Read Only)
-    $routes->get('students', 'StudentController::index');
-    $routes->get('students/detail/(:num)', 'StudentController::detail/$1');
 
     // Counseling Sessions
     $routes->get('sessions', 'SessionController::index');
     $routes->get('sessions/create', 'SessionController::create');
     $routes->post('sessions/store', 'SessionController::store');
+    $routes->get('sessions/detail/(:num)', 'SessionController::show/$1');
     $routes->get('sessions/edit/(:num)', 'SessionController::edit/$1');
     $routes->post('sessions/update/(:num)', 'SessionController::update/$1');
     $routes->post('sessions/delete/(:num)', 'SessionController::delete/$1');
-    $routes->get('sessions/detail/(:num)', 'SessionController::detail/$1');
     $routes->post('sessions/addNote/(:num)', 'SessionController::addNote/$1');
+    $routes->get('sessions/students-by-class', 'SessionController::getStudentsByClass');
 
     // Cases & Violations
     $routes->get('cases', 'CaseController::index');
@@ -189,158 +166,4 @@ $routes->group('counselor', ['filter' => 'auth', 'namespace' => 'App\Controllers
     $routes->post('cases/delete/(:num)', 'CaseController::delete/$1');
     $routes->post('cases/addSanction/(:num)', 'CaseController::addSanction/$1');
     $routes->post('cases/notifyParent/(:num)', 'CaseController::notifyParent/$1');
-
-    $routes->get('violations', 'CaseController::index');
-    $routes->get('violations/create', 'CaseController::create');
-    $routes->post('violations/store', 'CaseController::store');
-
-    // Assessments
-    $routes->get('assessments', 'AssessmentController::index');
-    $routes->get('assessments/create', 'AssessmentController::create');
-    $routes->post('assessments/store', 'AssessmentController::store');
-    $routes->get('assessments/assign', 'AssessmentController::assign');
-    $routes->post('assessments/do-assign', 'AssessmentController::doAssign');
-    $routes->get('assessments/results/(:num)', 'AssessmentController::results/$1');
-
-    // Reports
-    $routes->get('reports', 'ReportController::index');
-    $routes->get('reports/generate', 'ReportController::generate');
-    $routes->get('reports/download/(:segment)', 'ReportController::download/$1');
-
-    // Schedule
-    $routes->get('schedule', 'ScheduleController::index');
-    $routes->get('schedule/calendar', 'ScheduleController::calendar');
-});
-
-/*
-|--------------------------------------------------------------------------
-| Wali Kelas Routes (Homeroom Teacher)
-|--------------------------------------------------------------------------
-| Filter: auth, role:Wali Kelas
-*/
-$routes->group('homeroom', ['filter' => 'auth', 'namespace' => 'App\Controllers\HomeroomTeacher'], function ($routes) {
-    // Dashboard
-    $routes->get('dashboard', 'DashboardController::index');
-
-    // Class Management
-    $routes->get('my-class', 'ClassController::myClass');
-    $routes->get('students', 'StudentController::index');
-    $routes->get('students/detail/(:num)', 'StudentController::detail/$1');
-
-    // Violations
-    $routes->get('violations', 'ViolationController::index');
-    $routes->get('violations/create', 'ViolationController::create');
-    $routes->post('violations/store', 'ViolationController::store');
-    $routes->get('violations/detail/(:num)', 'ViolationController::detail/$1');
-
-    // Reports
-    $routes->get('reports', 'ReportController::index');
-    $routes->get('reports/class-summary', 'ReportController::classSummary');
-
-    // Messages
-    $routes->get('messages', 'MessageController::index');
-});
-
-/*
-|--------------------------------------------------------------------------
-| Student Routes
-|--------------------------------------------------------------------------
-| Filter: auth, role:Siswa
-*/
-$routes->group('student', ['filter' => 'auth', 'namespace' => 'App\Controllers\Student'], function ($routes) {
-    // Dashboard
-    $routes->get('dashboard', 'DashboardController::index');
-
-    // Profile
-    $routes->get('profile', 'ProfileController::index');
-    $routes->post('profile/update', 'ProfileController::update');
-    $routes->post('profile/change-password', 'ProfileController::changePassword');
-
-    // Schedule
-    $routes->get('schedule', 'ScheduleController::index');
-    $routes->get('schedule/request', 'ScheduleController::request');
-    $routes->post('schedule/submit-request', 'ScheduleController::submitRequest');
-
-    // Assessments
-    $routes->get('assessments', 'AssessmentController::index');
-    $routes->get('assessments/take/(:num)', 'AssessmentController::take/$1');
-    $routes->post('assessments/submit/(:num)', 'AssessmentController::submit/$1');
-    $routes->get('assessments/results', 'AssessmentController::results');
-
-    // Violations
-    $routes->get('violations', 'ViolationController::index');
-
-    // Career Information
-    $routes->get('career', 'CareerController::index');
-    $routes->get('career/explore', 'CareerController::explore');
-    $routes->get('career/detail/(:num)', 'CareerController::detail/$1');
-    $routes->get('career/universities', 'CareerController::universities');
-
-    // Messages
-    $routes->get('messages', 'MessageController::index');
-    $routes->get('messages/compose', 'MessageController::compose');
-    $routes->post('messages/send', 'MessageController::send');
-});
-
-/*
-|--------------------------------------------------------------------------
-| Parent Routes
-|--------------------------------------------------------------------------
-| Filter: auth, role:Orang Tua
-*/
-$routes->group('parent', ['filter' => 'auth', 'namespace' => 'App\Controllers\Parent'], function ($routes) {
-    // Dashboard
-    $routes->get('dashboard', 'DashboardController::index');
-
-    // Children Profile
-    $routes->get('children', 'ChildController::index');
-    $routes->get('children/profile/(:num)', 'ChildController::profile/$1');
-    $routes->get('children/violations/(:num)', 'ChildController::violations/$1');
-    $routes->get('children/sessions/(:num)', 'ChildController::sessions/$1');
-
-    // Messages
-    $routes->get('messages', 'MessageController::index');
-    $routes->get('messages/compose', 'MessageController::compose');
-    $routes->post('messages/send', 'MessageController::send');
-});
-
-/*
-|--------------------------------------------------------------------------
-| Common Routes (Authenticated Users)
-|--------------------------------------------------------------------------
-*/
-$routes->group('', ['filter' => 'auth'], function ($routes) {
-    // Dashboard redirect
-    $routes->get('dashboard', 'DashboardController::redirect');
-
-    // Profile
-    $routes->get('profile', 'ProfileController::index');
-    $routes->post('profile/update', 'ProfileController::update');
-    $routes->post('profile/upload-photo', 'ProfileController::uploadPhoto');
-    $routes->post('profile/change-password', 'ProfileController::changePassword');
-
-    // Notifications
-    $routes->get('notifications', 'NotificationController::index');
-    $routes->post('notifications/mark-read/(:num)', 'NotificationController::markRead/$1');
-    $routes->post('notifications/mark-all-read', 'NotificationController::markAllRead');
-    $routes->post('notifications/delete/(:num)', 'NotificationController::delete/$1');
-
-    // Messages
-    $routes->get('messages', 'MessageController::inbox');
-    $routes->get('messages/sent', 'MessageController::sent');
-    $routes->get('messages/read/(:num)', 'MessageController::read/$1');
-    $routes->get('messages/compose', 'MessageController::compose');
-    $routes->post('messages/send', 'MessageController::send');
-    $routes->post('messages/delete/(:num)', 'MessageController::delete/$1');
-});
-
-/*
-|--------------------------------------------------------------------------
-| API Routes (Optional for AJAX requests)
-|--------------------------------------------------------------------------
-*/
-$routes->group('api', ['namespace' => 'App\Controllers\Api'], function ($routes) {
-    $routes->post('notifications/count', 'NotificationController::getUnreadCount', ['filter' => 'auth']);
-    $routes->get('students/search', 'StudentController::search', ['filter' => 'auth']);
-    $routes->get('users/search', 'UserController::search', ['filter' => 'auth']);
 });
