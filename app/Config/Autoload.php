@@ -116,6 +116,7 @@ class Autoload extends AutoloadConfig
         'cookie',
         'security',
         'auth',
+        'app',
     ];
 
     public function __construct()
