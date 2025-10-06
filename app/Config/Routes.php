@@ -22,6 +22,9 @@ use CodeIgniter\Router\RouteCollection;
 // Default controller
 $routes->get('/', 'Home::index');
 
+// Profile route
+$routes->get('profile', 'ProfileController::index');
+
 /*
 |--------------------------------------------------------------------------
 | Authentication Routes
@@ -51,6 +54,7 @@ $routes->group('admin', ['filter' => 'auth', 'namespace' => 'App\Controllers\Adm
     $routes->get('users', 'UserController::index');
     $routes->get('users/create', 'UserController::create');
     $routes->post('users/store', 'UserController::store');
+    $routes->get('users/show/(:num)', 'UserController::show/$1');
     $routes->get('users/edit/(:num)', 'UserController::edit/$1');
     $routes->post('users/update/(:num)', 'UserController::update/$1');
     $routes->post('users/delete/(:num)', 'UserController::delete/$1');
@@ -96,6 +100,7 @@ $routes->group('admin', ['filter' => 'auth', 'namespace' => 'App\Controllers\Adm
     $routes->get('students', 'StudentController::index');
     $routes->get('students/create', 'StudentController::create');
     $routes->post('students/store', 'StudentController::store');
+    $routes->get('students/profile/(:num)', 'StudentController::profile/$1');
     $routes->get('students/edit/(:num)', 'StudentController::edit/$1');
     $routes->post('students/update/(:num)', 'StudentController::update/$1');
     $routes->post('students/delete/(:num)', 'StudentController::delete/$1');

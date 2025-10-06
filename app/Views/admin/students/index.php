@@ -257,7 +257,7 @@
                                         <td>
                                             <div class="d-flex align-items-center">
                                                 <div class="flex-shrink-0 me-3">
-                                                    <img src="<?= user_avatar($student['profile_photo']) ?>"
+                                                    <img src="<?= user_avatar($student['profile_photo'] ?? null) ?>"
                                                         alt="<?= esc($student['full_name']) ?>"
                                                         class="avatar-xs rounded-circle">
                                                 </div>

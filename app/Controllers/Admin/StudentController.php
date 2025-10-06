@@ -18,14 +18,17 @@ namespace App\Controllers\Admin;
 use App\Controllers\BaseController;
 use App\Services\StudentService;
 use App\Validation\StudentValidation;
+use App\Libraries\ExcelImporter;
 
 class StudentController extends BaseController
 {
     protected $studentService;
+    protected $excelImporter;
 
     public function __construct()
     {
         $this->studentService = new StudentService();
+        $this->excelImporter = new ExcelImporter();
     }
 
     /**
@@ -468,62 +471,132 @@ class StudentController extends BaseController
     }
 
     /**
-     * Download import template
+     * Download Excel import template
      * 
      * @return \CodeIgniter\HTTP\ResponseInterface
      */
     public function downloadTemplate()
     {
-        $filename = 'template_import_siswa.csv';
+        try {
+            // Generate template using ExcelImporter library
+            $filename = 'template_import_siswa_' . date('Y-m-d') . '.xlsx';
+            $savePath = WRITEPATH . 'uploads/' . $filename;
 
-        header('Content-Type: text/csv');
-        header('Content-Disposition: attachment; filename="' . $filename . '"');
+            // Generate template
+            $this->excelImporter->generateTemplate($savePath);
 
-        $output = fopen('php://output', 'w');
+            // Check if file exists
+            if (!file_exists($savePath)) {
+                return redirect()->back()
+                    ->with('error', 'Gagal membuat template. File tidak ditemukan.');
+            }
 
-        // Add BOM for Excel UTF-8 support
-        fprintf($output, chr(0xEF) . chr(0xBB) . chr(0xBF));
+            // Set headers for download
+            return $this->response->download($savePath, null)
+                ->setFileName($filename)
+                ->setContentType('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        } catch (\Exception $e) {
+            log_message('error', 'Error generating template: ' . $e->getMessage());
 
-        // Add headers
-        $headers = [
-            'NISN',
-            'NIS',
-            'Nama Lengkap',
-            'Username',
-            'Email',
-            'Password',
-            'Jenis Kelamin (L/P)',
-            'Tempat Lahir',
-            'Tanggal Lahir (YYYY-MM-DD)',
-            'Agama',
-            'Alamat',
-            'Telepon',
-            'Tanggal Masuk (YYYY-MM-DD)',
-        ];
+            return redirect()->back()
+                ->with('error', 'Terjadi kesalahan saat membuat template: ' . $e->getMessage());
+        }
+    }
 
-        fputcsv($output, $headers);
 
-        // Add sample data
-        $sample = [
-            '1234567890',
-            'NIS001',
-            'Contoh Nama Siswa',
-            'siswa001',
-            'siswa001@example.com',
-            'password123',
-            'L',
-            'Bandung',
-            '2010-01-15',
-            'Islam',
-            'Jl. Contoh No. 123',
-            '081234567890',
-            '2024-07-15',
-        ];
+    // ========== 4. TAMBAHKAN METHOD doImport() BARU ==========
+    /**
+     * Process student import from Excel file
+     * 
+     * @return \CodeIgniter\HTTP\RedirectResponse
+     */
+    public function doImport()
+    {
+        // Validate file upload
+        $rules = \App\Validation\StudentValidation::importRules();
 
-        fputcsv($output, $sample);
+        if (!$this->validate($rules)) {
+            return redirect()->back()
+                ->withInput()
+                ->with('errors', $this->validator->getErrors());
+        }
 
-        fclose($output);
-        exit;
+        // Get uploaded file
+        $file = $this->request->getFile('import_file');
+
+        if (!$file->isValid()) {
+            return redirect()->back()
+                ->with('error', 'File yang diupload tidak valid.');
+        }
+
+        try {
+            // Create upload directory if not exists
+            $uploadPath = WRITEPATH . 'uploads/imports/';
+            if (!is_dir($uploadPath)) {
+                mkdir($uploadPath, 0755, true);
+            }
+
+            // Generate unique filename
+            $newFileName = 'import_' . date('YmdHis') . '_' . uniqid() . '.' . $file->getExtension();
+
+            // Move uploaded file
+            if (!$file->move($uploadPath, $newFileName)) {
+                throw new \Exception('Gagal memindahkan file upload.');
+            }
+
+            $filePath = $uploadPath . $newFileName;
+
+            // Process import using ExcelImporter
+            $results = $this->excelImporter->importStudents($filePath);
+
+            // Delete uploaded file after processing
+            if (file_exists($filePath)) {
+                unlink($filePath);
+            }
+
+            // Prepare success message
+            $message = sprintf(
+                'Import selesai! Total: %d baris, Berhasil: %d, Gagal: %d',
+                $results['total_rows'],
+                $results['success'],
+                $results['failed']
+            );
+
+            // Check if there are errors or warnings
+            if ($results['failed'] > 0) {
+                // Store detailed errors in session for display
+                session()->setFlashdata('import_errors', $results['errors']);
+
+                if ($results['success'] > 0) {
+                    // Partial success
+                    session()->setFlashdata('warning', $message);
+                } else {
+                    // Total failure
+                    session()->setFlashdata('error', 'Import gagal! ' . $message);
+                }
+            } else {
+                // Complete success
+                session()->setFlashdata('success', $message);
+            }
+
+            // Add warnings if any
+            if (!empty($results['warnings'])) {
+                session()->setFlashdata('import_warnings', $results['warnings']);
+            }
+
+            return redirect()->to('admin/students');
+        } catch (\Exception $e) {
+            // Log error
+            log_message('error', 'Import error: ' . $e->getMessage());
+
+            // Delete file if exists
+            if (isset($filePath) && file_exists($filePath)) {
+                unlink($filePath);
+            }
+
+            return redirect()->back()
+                ->with('error', 'Terjadi kesalahan saat import: ' . $e->getMessage());
+        }
     }
 
     /**
