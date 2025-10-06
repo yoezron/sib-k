@@ -178,6 +178,7 @@ $routes->group('counselor', ['filter' => 'auth', 'namespace' => 'App\Controllers
     $routes->post('sessions/update/(:num)', 'SessionController::update/$1');
     $routes->post('sessions/delete/(:num)', 'SessionController::delete/$1');
     $routes->get('sessions/detail/(:num)', 'SessionController::detail/$1');
+    $routes->post('sessions/addNote/(:num)', 'SessionController::addNote/$1');
 
     // Cases & Violations
     $routes->get('cases', 'CaseController::index');

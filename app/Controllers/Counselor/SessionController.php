@@ -413,98 +413,14 @@ class SessionController extends BaseController
      * @param int $id
      * @return \CodeIgniter\HTTP\RedirectResponse
      */
-    public function delete($id)
-    {
-        // Check authentication
-        if (!is_logged_in()) {
-            return redirect()->to('/login')->with('error', 'Silakan login terlebih dahulu');
-        }
 
-        // Get session
-        $session = $this->sessionModel->find($id);
-
-        if (!$session) {
-            return redirect()->to('counselor/sessions')
-                ->with('error', 'Sesi konseling tidak ditemukan');
-        }
-
-        // Check ownership
-        if (!is_koordinator() && $session['counselor_id'] != auth_id()) {
-            return redirect()->to('counselor/sessions')
-                ->with('error', 'Anda tidak memiliki akses ke sesi ini');
-        }
-
-        try {
-            // Soft delete
-            $this->sessionModel->delete($id);
-
-            return redirect()->to('counselor/sessions')
-                ->with('success', 'Sesi konseling berhasil dihapus');
-        } catch (\Exception $e) {
-            log_message('error', 'Error deleting session: ' . $e->getMessage());
-
-            return redirect()->back()
-                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
-        }
-    }
 
     /**
      * Add note to session (AJAX)
      * 
      * @return \CodeIgniter\HTTP\ResponseInterface
      */
-    public function addNote()
-    {
-        if (!$this->request->isAJAX()) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Invalid request',
-            ]);
-        }
 
-        // Validate
-        $rules = SessionValidation::addNoteRules();
-
-        if (!$this->validate($rules)) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Validation failed',
-                'errors' => $this->validator->getErrors(),
-            ]);
-        }
-
-        $data = $this->request->getPost();
-        $data['created_by'] = auth_id();
-
-        try {
-            $noteId = $this->noteModel->insert($data);
-
-            if (!$noteId) {
-                throw new \Exception('Gagal menyimpan catatan');
-            }
-
-            // Get the created note with author info
-            $note = $this->db->table('session_notes')
-                ->select('session_notes.*, users.full_name as author_name')
-                ->join('users', 'users.id = session_notes.created_by')
-                ->where('session_notes.id', $noteId)
-                ->get()
-                ->getRowArray();
-
-            return $this->response->setJSON([
-                'success' => true,
-                'message' => 'Catatan berhasil ditambahkan',
-                'data' => $note,
-            ]);
-        } catch (\Exception $e) {
-            log_message('error', 'Error adding note: ' . $e->getMessage());
-
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Terjadi kesalahan: ' . $e->getMessage(),
-            ]);
-        }
-    }
 
     /**
      * Get students by class (AJAX for form)
@@ -579,5 +495,126 @@ class SessionController extends BaseController
             ->where('is_active', 1)
             ->orderBy('class_name', 'ASC')
             ->findAll();
+    }
+
+    /**
+     * Delete counseling session
+     * 
+     * @param int $id
+     * @return \CodeIgniter\HTTP\RedirectResponse
+     */
+    public function delete($id)
+    {
+        // Check authentication
+        if (!is_logged_in()) {
+            return redirect()->to('/login')->with('error', 'Silakan login terlebih dahulu');
+        }
+
+        // Get session
+        $session = $this->sessionModel->find($id);
+
+        if (!$session) {
+            return redirect()->to('counselor/sessions')
+                ->with('error', 'Sesi konseling tidak ditemukan');
+        }
+
+        // Check ownership
+        if (!is_koordinator() && $session['counselor_id'] != auth_id()) {
+            return redirect()->to('counselor/sessions')
+                ->with('error', 'Anda tidak memiliki akses ke sesi ini');
+        }
+
+        try {
+            // Delete session (will cascade to notes and participants)
+            $this->sessionModel->delete($id);
+
+            return redirect()->to('counselor/sessions')
+                ->with('success', 'Sesi konseling berhasil dihapus');
+        } catch (\Exception $e) {
+            log_message('error', 'Error deleting session: ' . $e->getMessage());
+
+            return redirect()->back()
+                ->with('error', 'Terjadi kesalahan saat menghapus sesi');
+        }
+    }
+
+    /**
+     * Add note to counseling session
+     * 
+     * @param int $id
+     * @return \CodeIgniter\HTTP\RedirectResponse
+     */
+    public function addNote($id)
+    {
+        // Check authentication
+        if (!is_logged_in()) {
+            return redirect()->to('/login')->with('error', 'Silakan login terlebih dahulu');
+        }
+
+        if (!is_guru_bk() && !is_koordinator()) {
+            return redirect()->to('/')->with('error', 'Akses ditolak');
+        }
+
+        // Get session
+        $session = $this->sessionModel->find($id);
+
+        if (!$session) {
+            return redirect()->to('counselor/sessions')
+                ->with('error', 'Sesi konseling tidak ditemukan');
+        }
+
+        // Check ownership - allow if koordinator or session owner
+        if (!is_koordinator() && $session['counselor_id'] != auth_id()) {
+            return redirect()->to('counselor/sessions')
+                ->with('error', 'Anda tidak memiliki akses ke sesi ini');
+        }
+
+        // Validate input
+        $rules = [
+            'note_content' => [
+                'label' => 'Isi Catatan',
+                'rules' => 'required|min_length[10]|max_length[1000]',
+                'errors' => [
+                    'required' => '{field} harus diisi',
+                    'min_length' => '{field} minimal 10 karakter',
+                    'max_length' => '{field} maksimal 1000 karakter'
+                ]
+            ],
+            'is_important' => [
+                'label' => 'Status Penting',
+                'rules' => 'permit_empty|in_list[0,1]'
+            ]
+        ];
+
+        if (!$this->validate($rules)) {
+            return redirect()->back()
+                ->withInput()
+                ->with('errors', $this->validator->getErrors());
+        }
+
+        $data = $this->request->getPost();
+
+        try {
+            // Prepare note data
+            $noteData = [
+                'session_id' => $id,
+                'counselor_id' => auth_id(),
+                'note_content' => $data['note_content'],
+                'is_important' => isset($data['is_important']) ? 1 : 0,
+                'created_at' => date('Y-m-d H:i:s')
+            ];
+
+            // Save note
+            $this->noteModel->insert($noteData);
+
+            return redirect()->to('counselor/sessions/detail/' . $id)
+                ->with('success', 'Catatan berhasil ditambahkan');
+        } catch (\Exception $e) {
+            log_message('error', 'Error adding note: ' . $e->getMessage());
+
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Terjadi kesalahan saat menyimpan catatan: ' . $e->getMessage());
+        }
     }
 }
