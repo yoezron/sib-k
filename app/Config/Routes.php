@@ -167,3 +167,106 @@ $routes->group('counselor', ['filter' => 'auth', 'namespace' => 'App\Controllers
     $routes->post('cases/addSanction/(:num)', 'CaseController::addSanction/$1');
     $routes->post('cases/notifyParent/(:num)', 'CaseController::notifyParent/$1');
 });
+
+
+/**
+ * File Path: app/Config/Routes.php (Tambahkan ke file Routes yang sudah ada)
+ * 
+ * Routes Configuration - Assessment Module
+ * Route definitions untuk modul asesmen Guru BK
+ * 
+ * @package    SIB-K
+ * @subpackage Config
+ * @category   Routes
+ * @author     Development Team
+ * @created    2025-01-06
+ */
+
+// =====================================================
+// COUNSELOR ROUTES - ASSESSMENT MODULE
+// =====================================================
+$routes->group('counselor', ['filter' => 'auth', 'namespace' => 'App\Controllers\Counselor'], function ($routes) {
+
+    // Assessment Dashboard & CRUD
+    $routes->get('assessments', 'AssessmentController::index', ['as' => 'counselor.assessments']);
+    $routes->get('assessments/create', 'AssessmentController::create', ['as' => 'counselor.assessments.create']);
+    $routes->post('assessments/store', 'AssessmentController::store', ['as' => 'counselor.assessments.store']);
+    $routes->get('assessments/(:num)', 'AssessmentController::show/$1', ['as' => 'counselor.assessments.show']);
+    $routes->get('assessments/(:num)/edit', 'AssessmentController::edit/$1', ['as' => 'counselor.assessments.edit']);
+    $routes->post('assessments/(:num)/update', 'AssessmentController::update/$1', ['as' => 'counselor.assessments.update']);
+    $routes->put('assessments/(:num)', 'AssessmentController::update/$1');
+    $routes->delete('assessments/(:num)', 'AssessmentController::delete/$1', ['as' => 'counselor.assessments.delete']);
+    $routes->post('assessments/(:num)/delete', 'AssessmentController::delete/$1');
+
+    // Question Management
+    $routes->get('assessments/(:num)/questions', 'AssessmentController::questions/$1', ['as' => 'counselor.assessments.questions']);
+    $routes->post('assessments/(:num)/questions/add', 'AssessmentController::addQuestion/$1', ['as' => 'counselor.assessments.questions.add']);
+    $routes->post('assessments/(:num)/questions/(:num)/update', 'AssessmentController::updateQuestion/$1/$2', ['as' => 'counselor.assessments.questions.update']);
+    $routes->delete('assessments/(:num)/questions/(:num)', 'AssessmentController::deleteQuestion/$1/$2', ['as' => 'counselor.assessments.questions.delete']);
+    $routes->post('assessments/(:num)/questions/(:num)/delete', 'AssessmentController::deleteQuestion/$1/$2');
+
+    // Assignment
+    $routes->get('assessments/(:num)/assign', 'AssessmentController::assign/$1', ['as' => 'counselor.assessments.assign']);
+    $routes->post('assessments/(:num)/assign/process', 'AssessmentController::processAssign/$1', ['as' => 'counselor.assessments.assign.process']);
+
+    // Results & Grading
+    $routes->get('assessments/(:num)/results', 'AssessmentController::results/$1', ['as' => 'counselor.assessments.results']);
+    $routes->get('assessments/(:num)/results/(:num)', 'AssessmentController::resultDetail/$1/$2', ['as' => 'counselor.assessments.results.detail']);
+    $routes->get('assessments/(:num)/results/(:num)/grade', 'AssessmentController::resultDetail/$1/$2');
+    $routes->get('assessments/(:num)/grading', 'AssessmentController::grading/$1', ['as' => 'counselor.assessments.grading']);
+    $routes->post('assessments/grade/submit', 'AssessmentController::submitGrade', ['as' => 'counselor.assessments.grade.submit']);
+
+    // Publishing Actions
+    $routes->get('assessments/(:num)/publish', 'AssessmentController::publish/$1', ['as' => 'counselor.assessments.publish']);
+    $routes->post('assessments/(:num)/publish', 'AssessmentController::publish/$1');
+    $routes->get('assessments/(:num)/unpublish', 'AssessmentController::unpublish/$1', ['as' => 'counselor.assessments.unpublish']);
+    $routes->post('assessments/(:num)/unpublish', 'AssessmentController::unpublish/$1');
+
+    // Duplicate
+    $routes->get('assessments/(:num)/duplicate', 'AssessmentController::duplicate/$1', ['as' => 'counselor.assessments.duplicate']);
+    $routes->post('assessments/(:num)/duplicate', 'AssessmentController::duplicate/$1');
+});
+
+// =====================================================
+// STUDENT ROUTES - ASSESSMENT MODULE (Untuk Fase 5.1)
+// =====================================================
+$routes->group('student', ['filter' => 'auth', 'namespace' => 'App\Controllers\Student'], function ($routes) {
+
+    // Available Assessments
+    $routes->get('assessments', 'AssessmentController::index', ['as' => 'student.assessments']);
+    $routes->get('assessments/available', 'AssessmentController::available', ['as' => 'student.assessments.available']);
+
+    // Take Assessment
+    $routes->get('assessments/(:num)/start', 'AssessmentController::start/$1', ['as' => 'student.assessments.start']);
+    $routes->get('assessments/(:num)/take', 'AssessmentController::take/$1', ['as' => 'student.assessments.take']);
+    $routes->post('assessments/(:num)/answer', 'AssessmentController::submitAnswer/$1', ['as' => 'student.assessments.answer']);
+    $routes->post('assessments/(:num)/submit', 'AssessmentController::submitAssessment/$1', ['as' => 'student.assessments.submit']);
+
+    // Results
+    $routes->get('assessments/results', 'AssessmentController::results', ['as' => 'student.assessments.results']);
+    $routes->get('assessments/(:num)/result', 'AssessmentController::viewResult/$1', ['as' => 'student.assessments.result']);
+    $routes->get('assessments/(:num)/review', 'AssessmentController::reviewAnswers/$1', ['as' => 'student.assessments.review']);
+});
+
+// =====================================================
+// API ROUTES - ASSESSMENT MODULE (Optional - untuk AJAX)
+// =====================================================
+$routes->group('api', ['namespace' => 'App\Controllers\Api'], function ($routes) {
+
+    // Assessment API
+    $routes->group('assessments', ['filter' => 'auth'], function ($routes) {
+        // Get assessment data
+        $routes->get('(:num)', 'AssessmentApiController::show/$1');
+        $routes->get('(:num)/questions', 'AssessmentApiController::getQuestions/$1');
+        $routes->get('(:num)/statistics', 'AssessmentApiController::getStatistics/$1');
+
+        // Student progress
+        $routes->get('(:num)/progress/(:num)', 'AssessmentApiController::getProgress/$1/$2'); // assessment_id/student_id
+
+        // Submit answer (AJAX)
+        $routes->post('answer', 'AssessmentApiController::saveAnswer');
+
+        // Auto-save draft
+        $routes->post('(:num)/autosave', 'AssessmentApiController::autosave/$1');
+    });
+});

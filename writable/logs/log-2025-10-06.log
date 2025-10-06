@@ -2093,3 +2093,173 @@ DEBUG - 2025-10-06 16:59:00 --> Session: Class initialized using 'CodeIgniter\Se
 DEBUG - 2025-10-06 16:59:02 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
 DEBUG - 2025-10-06 16:59:07 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
 DEBUG - 2025-10-06 16:59:09 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2025-10-06 21:53:24 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2025-10-06 21:53:24 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2025-10-06 21:53:35 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+INFO - 2025-10-06 21:53:35 --> CSRF token verified.
+DEBUG - 2025-10-06 21:53:35 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2025-10-06 21:53:38 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+ERROR - 2025-10-06 21:53:38 --> mysqli_sql_exception: Table 'sibk_mapersis31.assessments' doesn't exist in C:\laragon\www\sib-k\system\Database\MySQLi\Connection.php:327
+Stack trace:
+#0 C:\laragon\www\sib-k\system\Database\MySQLi\Connection.php(327): mysqli->query('SELECT `assessm...', 0)
+#1 C:\laragon\www\sib-k\system\Database\BaseConnection.php(729): CodeIgniter\Database\MySQLi\Connection->execute('SELECT `assessm...')
+#2 C:\laragon\www\sib-k\system\Database\BaseConnection.php(646): CodeIgniter\Database\BaseConnection->simpleQuery('SELECT `assessm...')
+#3 C:\laragon\www\sib-k\system\Database\BaseBuilder.php(1649): CodeIgniter\Database\BaseConnection->query('SELECT `assessm...', Array, false)
+#4 C:\laragon\www\sib-k\system\Model.php(286): CodeIgniter\Database\BaseBuilder->get()
+#5 C:\laragon\www\sib-k\system\BaseModel.php(677): CodeIgniter\Model->doFindAll(0, 0)
+#6 C:\laragon\www\sib-k\app\Models\AssessmentModel.php(157): CodeIgniter\BaseModel->findAll()
+#7 C:\laragon\www\sib-k\app\Controllers\Counselor\AssessmentController.php(68): App\Models\AssessmentModel->getByCounselor('15', Array)
+#8 C:\laragon\www\sib-k\system\CodeIgniter.php(933): App\Controllers\Counselor\AssessmentController->index()
+#9 C:\laragon\www\sib-k\system\CodeIgniter.php(507): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\Counselor\AssessmentController))
+#10 C:\laragon\www\sib-k\system\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(NULL, Object(Config\Cache), false)
+#11 C:\laragon\www\sib-k\system\Boot.php(363): CodeIgniter\CodeIgniter->run()
+#12 C:\laragon\www\sib-k\system\Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+#13 C:\laragon\www\sib-k\public\index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+#14 C:\laragon\www\sib-k\system\rewrite.php(44): require_once('C:\\laragon\\www\\...')
+#15 {main}
+CRITICAL - 2025-10-06 21:53:38 --> CodeIgniter\Database\Exceptions\DatabaseException: Table 'sibk_mapersis31.assessments' doesn't exist
+[Method: GET, Route: counselor/assessments]
+in SYSTEMPATH\Database\BaseConnection.php on line 684.
+ 1 SYSTEMPATH\Database\BaseBuilder.php(1649): CodeIgniter\Database\BaseConnection->query('SELECT `assessments`.*, `users`.`full_name` as `creator_name`, `classes`.`class_name` as `target_class_name`
+FROM `assessments`
+JOIN `users` ON `users`.`id` = `assessments`.`created_by`
+LEFT JOIN `classes` ON `classes`.`id` = `assessments`.`target_class_id`
+WHERE `assessments`.`created_by` = :assessments.created_by:
+AND `assessments`.`deleted_at` IS NULL
+ORDER BY `assessments`.`created_at` DESC', [...], false)
+ 2 SYSTEMPATH\Model.php(286): CodeIgniter\Database\BaseBuilder->get()
+ 3 SYSTEMPATH\BaseModel.php(677): CodeIgniter\Model->doFindAll(0, 0)
+ 4 APPPATH\Models\AssessmentModel.php(157): CodeIgniter\BaseModel->findAll()
+ 5 APPPATH\Controllers\Counselor\AssessmentController.php(68): App\Models\AssessmentModel->getByCounselor('15', [...])
+ 6 SYSTEMPATH\CodeIgniter.php(933): App\Controllers\Counselor\AssessmentController->index()
+ 7 SYSTEMPATH\CodeIgniter.php(507): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\Counselor\AssessmentController))
+ 8 SYSTEMPATH\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+ 9 SYSTEMPATH\Boot.php(363): CodeIgniter\CodeIgniter->run()
+10 SYSTEMPATH\Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+11 FCPATH\index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+12 SYSTEMPATH\rewrite.php(44): require_once('C:\\laragon\\www\\sib-k\\public\\index.php')
+CRITICAL - 2025-10-06 21:53:38 --> [Caused by] CodeIgniter\Database\Exceptions\DatabaseException: Table 'sibk_mapersis31.assessments' doesn't exist
+in SYSTEMPATH\Database\MySQLi\Connection.php on line 332.
+ 1 SYSTEMPATH\Database\BaseConnection.php(729): CodeIgniter\Database\MySQLi\Connection->execute('SELECT `assessments`.*, `users`.`full_name` as `creator_name`, `classes`.`class_name` as `target_class_name`
+FROM `assessments`
+JOIN `users` ON `users`.`id` = `assessments`.`created_by`
+LEFT JOIN `classes` ON `classes`.`id` = `assessments`.`target_class_id`
+WHERE `assessments`.`created_by` = \'15\'
+AND `assessments`.`deleted_at` IS NULL
+ORDER BY `assessments`.`created_at` DESC')
+ 2 SYSTEMPATH\Database\BaseConnection.php(646): CodeIgniter\Database\BaseConnection->simpleQuery('SELECT `assessments`.*, `users`.`full_name` as `creator_name`, `classes`.`class_name` as `target_class_name`
+FROM `assessments`
+JOIN `users` ON `users`.`id` = `assessments`.`created_by`
+LEFT JOIN `classes` ON `classes`.`id` = `assessments`.`target_class_id`
+WHERE `assessments`.`created_by` = \'15\'
+AND `assessments`.`deleted_at` IS NULL
+ORDER BY `assessments`.`created_at` DESC')
+ 3 SYSTEMPATH\Database\BaseBuilder.php(1649): CodeIgniter\Database\BaseConnection->query('SELECT `assessments`.*, `users`.`full_name` as `creator_name`, `classes`.`class_name` as `target_class_name`
+FROM `assessments`
+JOIN `users` ON `users`.`id` = `assessments`.`created_by`
+LEFT JOIN `classes` ON `classes`.`id` = `assessments`.`target_class_id`
+WHERE `assessments`.`created_by` = :assessments.created_by:
+AND `assessments`.`deleted_at` IS NULL
+ORDER BY `assessments`.`created_at` DESC', [...], false)
+ 4 SYSTEMPATH\Model.php(286): CodeIgniter\Database\BaseBuilder->get()
+ 5 SYSTEMPATH\BaseModel.php(677): CodeIgniter\Model->doFindAll(0, 0)
+ 6 APPPATH\Models\AssessmentModel.php(157): CodeIgniter\BaseModel->findAll()
+ 7 APPPATH\Controllers\Counselor\AssessmentController.php(68): App\Models\AssessmentModel->getByCounselor('15', [...])
+ 8 SYSTEMPATH\CodeIgniter.php(933): App\Controllers\Counselor\AssessmentController->index()
+ 9 SYSTEMPATH\CodeIgniter.php(507): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\Counselor\AssessmentController))
+10 SYSTEMPATH\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+11 SYSTEMPATH\Boot.php(363): CodeIgniter\CodeIgniter->run()
+12 SYSTEMPATH\Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+13 FCPATH\index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+14 SYSTEMPATH\rewrite.php(44): require_once('C:\\laragon\\www\\sib-k\\public\\index.php')
+CRITICAL - 2025-10-06 21:53:38 --> [Caused by] mysqli_sql_exception: Table 'sibk_mapersis31.assessments' doesn't exist
+in SYSTEMPATH\Database\MySQLi\Connection.php on line 327.
+ 1 SYSTEMPATH\Database\MySQLi\Connection.php(327): mysqli->query('SELECT `assessments`.*, `users`.`full_name` as `creator_name`, `classes`.`class_name` as `target_class_name`
+FROM `assessments`
+JOIN `users` ON `users`.`id` = `assessments`.`created_by`
+LEFT JOIN `classes` ON `classes`.`id` = `assessments`.`target_class_id`
+WHERE `assessments`.`created_by` = \'15\'
+AND `assessments`.`deleted_at` IS NULL
+ORDER BY `assessments`.`created_at` DESC', 0)
+ 2 SYSTEMPATH\Database\BaseConnection.php(729): CodeIgniter\Database\MySQLi\Connection->execute('SELECT `assessments`.*, `users`.`full_name` as `creator_name`, `classes`.`class_name` as `target_class_name`
+FROM `assessments`
+JOIN `users` ON `users`.`id` = `assessments`.`created_by`
+LEFT JOIN `classes` ON `classes`.`id` = `assessments`.`target_class_id`
+WHERE `assessments`.`created_by` = \'15\'
+AND `assessments`.`deleted_at` IS NULL
+ORDER BY `assessments`.`created_at` DESC')
+ 3 SYSTEMPATH\Database\BaseConnection.php(646): CodeIgniter\Database\BaseConnection->simpleQuery('SELECT `assessments`.*, `users`.`full_name` as `creator_name`, `classes`.`class_name` as `target_class_name`
+FROM `assessments`
+JOIN `users` ON `users`.`id` = `assessments`.`created_by`
+LEFT JOIN `classes` ON `classes`.`id` = `assessments`.`target_class_id`
+WHERE `assessments`.`created_by` = \'15\'
+AND `assessments`.`deleted_at` IS NULL
+ORDER BY `assessments`.`created_at` DESC')
+ 4 SYSTEMPATH\Database\BaseBuilder.php(1649): CodeIgniter\Database\BaseConnection->query('SELECT `assessments`.*, `users`.`full_name` as `creator_name`, `classes`.`class_name` as `target_class_name`
+FROM `assessments`
+JOIN `users` ON `users`.`id` = `assessments`.`created_by`
+LEFT JOIN `classes` ON `classes`.`id` = `assessments`.`target_class_id`
+WHERE `assessments`.`created_by` = :assessments.created_by:
+AND `assessments`.`deleted_at` IS NULL
+ORDER BY `assessments`.`created_at` DESC', [...], false)
+ 5 SYSTEMPATH\Model.php(286): CodeIgniter\Database\BaseBuilder->get()
+ 6 SYSTEMPATH\BaseModel.php(677): CodeIgniter\Model->doFindAll(0, 0)
+ 7 APPPATH\Models\AssessmentModel.php(157): CodeIgniter\BaseModel->findAll()
+ 8 APPPATH\Controllers\Counselor\AssessmentController.php(68): App\Models\AssessmentModel->getByCounselor('15', [...])
+ 9 SYSTEMPATH\CodeIgniter.php(933): App\Controllers\Counselor\AssessmentController->index()
+10 SYSTEMPATH\CodeIgniter.php(507): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\Counselor\AssessmentController))
+11 SYSTEMPATH\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+12 SYSTEMPATH\Boot.php(363): CodeIgniter\CodeIgniter->run()
+13 SYSTEMPATH\Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+14 FCPATH\index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+15 SYSTEMPATH\rewrite.php(44): require_once('C:\\laragon\\www\\sib-k\\public\\index.php')
+ERROR - 2025-10-06 21:53:54 --> mysqli_sql_exception: Failed to open the referenced table 'assessment_results' in C:\laragon\www\sib-k\system\Database\MySQLi\Connection.php:327
+Stack trace:
+#0 C:\laragon\www\sib-k\system\Database\MySQLi\Connection.php(327): mysqli->query('ALTER TABLE ass...', 0)
+#1 C:\laragon\www\sib-k\system\Database\BaseConnection.php(729): CodeIgniter\Database\MySQLi\Connection->execute('ALTER TABLE ass...')
+#2 C:\laragon\www\sib-k\system\Database\BaseConnection.php(646): CodeIgniter\Database\BaseConnection->simpleQuery('ALTER TABLE ass...')
+#3 C:\laragon\www\sib-k\app\Database\Migrations\2024-01-01-000016_create_assessment_answers_table.php(153): CodeIgniter\Database\BaseConnection->query('ALTER TABLE ass...')
+#4 C:\laragon\www\sib-k\system\Database\MigrationRunner.php(876): App\Database\Migrations\CreateAssessmentAnswersTable->up()
+#5 C:\laragon\www\sib-k\system\Database\MigrationRunner.php(182): CodeIgniter\Database\MigrationRunner->migrate('up', Object(stdClass))
+#6 C:\laragon\www\sib-k\system\Commands\Database\Migrate.php(85): CodeIgniter\Database\MigrationRunner->latest(NULL)
+#7 C:\laragon\www\sib-k\system\CLI\Commands.php(74): CodeIgniter\Commands\Database\Migrate->run(Array)
+#8 C:\laragon\www\sib-k\system\CLI\Console.php(47): CodeIgniter\CLI\Commands->run('migrate', Array)
+#9 C:\laragon\www\sib-k\system\Boot.php(388): CodeIgniter\CLI\Console->run()
+#10 C:\laragon\www\sib-k\system\Boot.php(133): CodeIgniter\Boot::runCommand(Object(CodeIgniter\CLI\Console))
+#11 C:\laragon\www\sib-k\spark(87): CodeIgniter\Boot::bootSpark(Object(Config\Paths))
+#12 {main}
+ERROR - 2025-10-06 21:56:36 --> mysqli_sql_exception: Table 'assessment_answers' already exists in C:\laragon\www\sib-k\system\Database\MySQLi\Connection.php:327
+Stack trace:
+#0 C:\laragon\www\sib-k\system\Database\MySQLi\Connection.php(327): mysqli->query('CREATE TABLE `a...', 0)
+#1 C:\laragon\www\sib-k\system\Database\BaseConnection.php(729): CodeIgniter\Database\MySQLi\Connection->execute('CREATE TABLE `a...')
+#2 C:\laragon\www\sib-k\system\Database\BaseConnection.php(646): CodeIgniter\Database\BaseConnection->simpleQuery('CREATE TABLE `a...')
+#3 C:\laragon\www\sib-k\system\Database\Forge.php(570): CodeIgniter\Database\BaseConnection->query('CREATE TABLE `a...')
+#4 C:\laragon\www\sib-k\app\Database\Migrations\2024-01-01-000017_create_assessment_answers_table.php(140): CodeIgniter\Database\Forge->createTable('assessment_answ...')
+#5 C:\laragon\www\sib-k\system\Database\MigrationRunner.php(876): App\Database\Migrations\CreateAssessmentAnswersTable->up()
+#6 C:\laragon\www\sib-k\system\Database\MigrationRunner.php(182): CodeIgniter\Database\MigrationRunner->migrate('up', Object(stdClass))
+#7 C:\laragon\www\sib-k\system\Commands\Database\Migrate.php(85): CodeIgniter\Database\MigrationRunner->latest(NULL)
+#8 C:\laragon\www\sib-k\system\CLI\Commands.php(74): CodeIgniter\Commands\Database\Migrate->run(Array)
+#9 C:\laragon\www\sib-k\system\CLI\Console.php(47): CodeIgniter\CLI\Commands->run('migrate', Array)
+#10 C:\laragon\www\sib-k\system\Boot.php(388): CodeIgniter\CLI\Console->run()
+#11 C:\laragon\www\sib-k\system\Boot.php(133): CodeIgniter\Boot::runCommand(Object(CodeIgniter\CLI\Console))
+#12 C:\laragon\www\sib-k\spark(87): CodeIgniter\Boot::bootSpark(Object(Config\Paths))
+#13 {main}
+ERROR - 2025-10-06 21:57:03 --> mysqli_sql_exception: Table 'assessment_answers' already exists in C:\laragon\www\sib-k\system\Database\MySQLi\Connection.php:327
+Stack trace:
+#0 C:\laragon\www\sib-k\system\Database\MySQLi\Connection.php(327): mysqli->query('CREATE TABLE `a...', 0)
+#1 C:\laragon\www\sib-k\system\Database\BaseConnection.php(729): CodeIgniter\Database\MySQLi\Connection->execute('CREATE TABLE `a...')
+#2 C:\laragon\www\sib-k\system\Database\BaseConnection.php(646): CodeIgniter\Database\BaseConnection->simpleQuery('CREATE TABLE `a...')
+#3 C:\laragon\www\sib-k\system\Database\Forge.php(570): CodeIgniter\Database\BaseConnection->query('CREATE TABLE `a...')
+#4 C:\laragon\www\sib-k\app\Database\Migrations\2024-01-01-000017_create_assessment_answers_table.php(140): CodeIgniter\Database\Forge->createTable('assessment_answ...')
+#5 C:\laragon\www\sib-k\system\Database\MigrationRunner.php(876): App\Database\Migrations\CreateAssessmentAnswersTable->up()
+#6 C:\laragon\www\sib-k\system\Database\MigrationRunner.php(182): CodeIgniter\Database\MigrationRunner->migrate('up', Object(stdClass))
+#7 C:\laragon\www\sib-k\system\Commands\Database\Migrate.php(85): CodeIgniter\Database\MigrationRunner->latest(NULL)
+#8 C:\laragon\www\sib-k\system\CLI\Commands.php(74): CodeIgniter\Commands\Database\Migrate->run(Array)
+#9 C:\laragon\www\sib-k\system\CLI\BaseCommand.php(119): CodeIgniter\CLI\Commands->run('migrate', Array)
+#10 C:\laragon\www\sib-k\system\Commands\Database\MigrateRefresh.php(87): CodeIgniter\CLI\BaseCommand->call('migrate', Array)
+#11 C:\laragon\www\sib-k\system\CLI\Commands.php(74): CodeIgniter\Commands\Database\MigrateRefresh->run(Array)
+#12 C:\laragon\www\sib-k\system\CLI\Console.php(47): CodeIgniter\CLI\Commands->run('migrate:refresh', Array)
+#13 C:\laragon\www\sib-k\system\Boot.php(388): CodeIgniter\CLI\Console->run()
+#14 C:\laragon\www\sib-k\system\Boot.php(133): CodeIgniter\Boot::runCommand(Object(CodeIgniter\CLI\Console))
+#15 C:\laragon\www\sib-k\spark(87): CodeIgniter\Boot::bootSpark(Object(Config\Paths))
+#16 {main}
