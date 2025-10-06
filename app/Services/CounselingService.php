@@ -430,17 +430,6 @@ class CounselingService
         }
     }
 
-    /**
-     * Get upcoming sessions for counselor
-     * 
-     * @param int $counselorId
-     * @param int $limit
-     * @return array
-     */
-    public function getUpcomingSessions($counselorId, $limit = 5)
-    {
-        return $this->sessionModel->getUpcomingSessions($counselorId, $limit);
-    }
 
     /**
      * Get recent activities (sessions and notes)
@@ -513,5 +502,77 @@ class CounselingService
     private function logActivity($action, $sessionId, $description)
     {
         log_message('info', "[CounselingService] Action: {$action}, Session ID: {$sessionId}, Description: {$description}");
+    }
+
+    /**
+     * Get sessions by counselor with filters
+     * 
+     * @param int $counselorId
+     * @param array $filters
+     * @return array
+     */
+    public function getSessionsByCounselor($counselorId, $filters = [])
+    {
+        $builder = $this->sessionModel
+            ->select('counseling_sessions.*,
+                      students.nisn, students.nis,
+                      users.full_name as student_name,
+                      classes.class_name,
+                      counselor_users.full_name as counselor_name,
+                      (SELECT COUNT(*) FROM session_notes 
+                       WHERE session_notes.session_id = counseling_sessions.id 
+                       AND session_notes.deleted_at IS NULL) as note_count')
+            ->join('students', 'students.id = counseling_sessions.student_id', 'left')
+            ->join('users', 'users.id = students.user_id', 'left')
+            ->join('classes', 'classes.id = counseling_sessions.class_id', 'left')
+            ->join('users as counselor_users', 'counselor_users.id = counseling_sessions.counselor_id', 'left')
+            ->where('counseling_sessions.counselor_id', $counselorId);
+
+        // Apply filters
+        if (!empty($filters['status'])) {
+            $builder->where('counseling_sessions.status', $filters['status']);
+        }
+
+        if (!empty($filters['session_type'])) {
+            $builder->where('counseling_sessions.session_type', $filters['session_type']);
+        }
+
+        if (!empty($filters['start_date'])) {
+            $builder->where('counseling_sessions.session_date >=', $filters['start_date']);
+        }
+
+        if (!empty($filters['end_date'])) {
+            $builder->where('counseling_sessions.session_date <=', $filters['end_date']);
+        }
+
+        if (!empty($filters['student_id'])) {
+            $builder->where('counseling_sessions.student_id', $filters['student_id']);
+        }
+
+        if (!empty($filters['search'])) {
+            $builder->groupStart()
+                ->like('counseling_sessions.topic', $filters['search'])
+                ->orLike('users.full_name', $filters['search'])
+                ->orLike('students.nisn', $filters['search'])
+                ->groupEnd();
+        }
+
+        // Order by date DESC
+        $builder->orderBy('counseling_sessions.session_date', 'DESC');
+        $builder->orderBy('counseling_sessions.session_time', 'DESC');
+
+        return $builder->findAll();
+    }
+
+    /**
+     * Get upcoming sessions for counselor
+     * 
+     * @param int $counselorId
+     * @param int $limit
+     * @return array
+     */
+    public function getUpcomingSessions($counselorId, $limit = 5)
+    {
+        return $this->sessionModel->getUpcomingSessions($counselorId, $limit);
     }
 }

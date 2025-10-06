@@ -185,6 +185,10 @@ $routes->group('counselor', ['filter' => 'auth', 'namespace' => 'App\Controllers
     $routes->get('cases/create', 'CaseController::create');
     $routes->post('cases/store', 'CaseController::store');
     $routes->get('cases/detail/(:num)', 'CaseController::detail/$1');
+    $routes->post('cases/update/(:num)', 'CaseController::update/$1');
+    $routes->post('cases/delete/(:num)', 'CaseController::delete/$1');
+    $routes->post('cases/addSanction/(:num)', 'CaseController::addSanction/$1');
+    $routes->post('cases/notifyParent/(:num)', 'CaseController::notifyParent/$1');
 
     $routes->get('violations', 'ViolationController::index');
     $routes->get('violations/create', 'ViolationController::create');
