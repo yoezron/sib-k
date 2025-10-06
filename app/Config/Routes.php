@@ -190,9 +190,9 @@ $routes->group('counselor', ['filter' => 'auth', 'namespace' => 'App\Controllers
     $routes->post('cases/addSanction/(:num)', 'CaseController::addSanction/$1');
     $routes->post('cases/notifyParent/(:num)', 'CaseController::notifyParent/$1');
 
-    $routes->get('violations', 'ViolationController::index');
-    $routes->get('violations/create', 'ViolationController::create');
-    $routes->post('violations/store', 'ViolationController::store');
+    $routes->get('violations', 'CaseController::index');
+    $routes->get('violations/create', 'CaseController::create');
+    $routes->post('violations/store', 'CaseController::store');
 
     // Assessments
     $routes->get('assessments', 'AssessmentController::index');
