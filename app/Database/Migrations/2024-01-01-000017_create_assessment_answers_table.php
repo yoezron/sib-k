@@ -21,6 +21,10 @@ class CreateAssessmentAnswersTable extends Migration
 {
     public function up()
     {
+        if ($this->db->tableExists('assessment_answers')) {
+            return;
+        }
+
         $this->forge->addField([
             'id' => [
                 'type'           => 'INT',
@@ -170,13 +174,18 @@ class CreateAssessmentAnswersTable extends Migration
 
     public function down()
     {
-        // Drop foreign keys first
-        $this->db->query('ALTER TABLE assessment_answers DROP FOREIGN KEY fk_answers_question');
-        $this->db->query('ALTER TABLE assessment_answers DROP FOREIGN KEY fk_answers_student');
-        $this->db->query('ALTER TABLE assessment_answers DROP FOREIGN KEY fk_answers_result');
-        $this->db->query('ALTER TABLE assessment_answers DROP FOREIGN KEY fk_answers_graded_by');
 
-        // Drop table
-        $this->forge->dropTable('assessment_answers');
+
+        if (! $this->db->tableExists('assessment_answers')) {
+            return;
+        }
+
+        $this->db->disableForeignKeyChecks();
+
+        try {
+            $this->forge->dropTable('assessment_answers', true);
+        } finally {
+            $this->db->enableForeignKeyChecks();
+        }
     }
 }
