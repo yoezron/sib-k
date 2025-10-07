@@ -277,7 +277,7 @@ $routes->group('api', ['namespace' => 'App\Controllers\Api'], function ($routes)
 |--------------------------------------------------------------------------
 | Filter: auth, role:Wali Kelas
 */
-$routes->group('homeroom-teacher', ['filter' => 'auth', 'namespace' => 'App\Controllers\HomeroomTeacher'], function ($routes) {
+$routes->group('homeroomteacher', ['filter' => 'auth', 'namespace' => 'App\Controllers\HomeroomTeacher'], function ($routes) {
     // Dashboard
     $routes->get('dashboard', 'DashboardController::index');
     $routes->get('dashboard/getStats', 'DashboardController::getStats');
