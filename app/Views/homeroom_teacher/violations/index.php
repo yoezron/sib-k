@@ -6,12 +6,17 @@
 <div class="row">
     <div class="col-12">
         <div class="page-title-box d-sm-flex align-items-center justify-content-between">
-            <h4 class="mb-sm-0 font-size-18">Daftar Pelanggaran Siswa</h4>
+            <h4 class="mb-sm-0 font-size-18"><?= esc($pageTitle) ?></h4>
 
             <div class="page-title-right">
                 <ol class="breadcrumb m-0">
-                    <li class="breadcrumb-item"><a href="<?= base_url('homeroom-teacher/dashboard') ?>">Dashboard</a></li>
-                    <li class="breadcrumb-item active">Pelanggaran</li>
+                    <?php foreach ($breadcrumbs as $crumb): ?>
+                        <?php if (isset($crumb['active']) && $crumb['active']): ?>
+                            <li class="breadcrumb-item active"><?= esc($crumb['title']) ?></li>
+                        <?php else: ?>
+                            <li class="breadcrumb-item"><a href="<?= esc($crumb['url']) ?>"><?= esc($crumb['title']) ?></a></li>
+                        <?php endif; ?>
+                    <?php endforeach; ?>
                 </ol>
             </div>
         </div>
@@ -56,9 +61,8 @@
                         </div>
                     </div>
                     <div>
-                        <a href="<?= base_url('homeroom-teacher/violations/create') ?>" class="btn btn-primary waves-effect waves-light">
-                            <i class="bx bx-plus-circle font-size-16 align-middle me-2"></i>
-                            Catat Pelanggaran
+                        <a href="<?= route_to('homeroom.violations.create') ?>" class="btn btn-primary">
+                            <i class="bx bx-plus-circle me-1"></i> Catat Pelanggaran
                         </a>
                     </div>
                 </div>
@@ -67,97 +71,31 @@
     </div>
 </div>
 
-<!-- Statistics Cards -->
-<div class="row">
-    <div class="col-md-4">
-        <div class="card mini-stats-wid">
-            <div class="card-body">
-                <div class="d-flex">
-                    <div class="flex-grow-1">
-                        <p class="text-muted fw-medium mb-2">Total Pelanggaran</p>
-                        <h4 class="mb-0"><?= $statistics['total'] ?></h4>
-                    </div>
-                    <div class="avatar-sm rounded-circle bg-primary align-self-center mini-stat-icon">
-                        <span class="avatar-title rounded-circle bg-primary">
-                            <i class="bx bx-list-ul font-size-24"></i>
-                        </span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-md-4">
-        <div class="card mini-stats-wid">
-            <div class="card-body">
-                <div class="d-flex">
-                    <div class="flex-grow-1">
-                        <p class="text-muted fw-medium mb-2">Bulan Ini</p>
-                        <h4 class="mb-0"><?= $statistics['this_month'] ?></h4>
-                    </div>
-                    <div class="avatar-sm rounded-circle bg-warning align-self-center mini-stat-icon">
-                        <span class="avatar-title rounded-circle bg-warning">
-                            <i class="bx bx-calendar font-size-24"></i>
-                        </span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-md-4">
-        <div class="card mini-stats-wid">
-            <div class="card-body">
-                <div class="d-flex flex-wrap gap-2">
-                    <div class="flex-grow-1">
-                        <p class="text-muted fw-medium mb-2">Per Tingkat</p>
-                        <div class="d-flex gap-2">
-                            <span class="badge bg-success-subtle text-success">
-                                Ringan: <?= $statistics['severity']['Ringan'] ?>
-                            </span>
-                            <span class="badge bg-warning-subtle text-warning">
-                                Sedang: <?= $statistics['severity']['Sedang'] ?>
-                            </span>
-                            <span class="badge bg-danger-subtle text-danger">
-                                Berat: <?= $statistics['severity']['Berat'] ?>
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Filter Card -->
+<!-- Filter Section -->
 <div class="row">
     <div class="col-12">
         <div class="card">
-            <div class="card-header">
-                <h4 class="card-title mb-0">
-                    <i class="bx bx-filter-alt"></i> Filter Pencarian
-                </h4>
-            </div>
             <div class="card-body">
-                <form method="get" action="<?= base_url('homeroom-teacher/violations') ?>" id="filterForm">
+                <form method="GET" action="<?= route_to('homeroom.violations.index') ?>" id="filterForm">
                     <div class="row g-3">
                         <div class="col-md-3">
                             <label class="form-label">Status</label>
                             <select name="status" class="form-select">
                                 <option value="">Semua Status</option>
-                                <option value="Dilaporkan" <?= $filters['status'] == 'Dilaporkan' ? 'selected' : '' ?>>Dilaporkan</option>
-                                <option value="Dalam Proses" <?= $filters['status'] == 'Dalam Proses' ? 'selected' : '' ?>>Dalam Proses</option>
-                                <option value="Selesai" <?= $filters['status'] == 'Selesai' ? 'selected' : '' ?>>Selesai</option>
+                                <option value="Dilaporkan" <?= ($filters['status'] ?? '') == 'Dilaporkan' ? 'selected' : '' ?>>Dilaporkan</option>
+                                <option value="Dalam Proses" <?= ($filters['status'] ?? '') == 'Dalam Proses' ? 'selected' : '' ?>>Dalam Proses</option>
+                                <option value="Selesai" <?= ($filters['status'] ?? '') == 'Selesai' ? 'selected' : '' ?>>Selesai</option>
+                                <option value="Dibatalkan" <?= ($filters['status'] ?? '') == 'Dibatalkan' ? 'selected' : '' ?>>Dibatalkan</option>
                             </select>
                         </div>
 
                         <div class="col-md-3">
-                            <label class="form-label">Tingkat</label>
+                            <label class="form-label">Tingkat Pelanggaran</label>
                             <select name="severity_level" class="form-select">
                                 <option value="">Semua Tingkat</option>
-                                <option value="Ringan" <?= $filters['severity_level'] == 'Ringan' ? 'selected' : '' ?>>Ringan</option>
-                                <option value="Sedang" <?= $filters['severity_level'] == 'Sedang' ? 'selected' : '' ?>>Sedang</option>
-                                <option value="Berat" <?= $filters['severity_level'] == 'Berat' ? 'selected' : '' ?>>Berat</option>
+                                <option value="Ringan" <?= ($filters['severity_level'] ?? '') == 'Ringan' ? 'selected' : '' ?>>Ringan</option>
+                                <option value="Sedang" <?= ($filters['severity_level'] ?? '') == 'Sedang' ? 'selected' : '' ?>>Sedang</option>
+                                <option value="Berat" <?= ($filters['severity_level'] ?? '') == 'Berat' ? 'selected' : '' ?>>Berat</option>
                             </select>
                         </div>
 
@@ -165,9 +103,9 @@
                             <label class="form-label">Kategori</label>
                             <select name="category_id" class="form-select">
                                 <option value="">Semua Kategori</option>
-                                <?php foreach ($categories as $category): ?>
-                                    <option value="<?= $category['id'] ?>" <?= $filters['category_id'] == $category['id'] ? 'selected' : '' ?>>
-                                        <?= esc($category['category_name']) ?>
+                                <?php foreach ($categories as $cat): ?>
+                                    <option value="<?= $cat['id'] ?>" <?= ($filters['category_id'] ?? '') == $cat['id'] ? 'selected' : '' ?>>
+                                        <?= esc($cat['category_name']) ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>
@@ -178,7 +116,7 @@
                             <select name="student_id" class="form-select">
                                 <option value="">Semua Siswa</option>
                                 <?php foreach ($students as $student): ?>
-                                    <option value="<?= $student['id'] ?>" <?= $filters['student_id'] == $student['id'] ? 'selected' : '' ?>>
+                                    <option value="<?= $student['id'] ?>" <?= ($filters['student_id'] ?? '') == $student['id'] ? 'selected' : '' ?>>
                                         <?= esc($student['full_name']) ?>
                                     </option>
                                 <?php endforeach; ?>
@@ -186,37 +124,36 @@
                         </div>
 
                         <div class="col-md-3">
-                            <label class="form-label">Dari Tanggal</label>
+                            <label class="form-label">Tanggal Dari</label>
                             <input type="date" name="date_from" class="form-control" value="<?= esc($filters['date_from'] ?? '') ?>">
                         </div>
 
                         <div class="col-md-3">
-                            <label class="form-label">Sampai Tanggal</label>
+                            <label class="form-label">Tanggal Sampai</label>
                             <input type="date" name="date_to" class="form-control" value="<?= esc($filters['date_to'] ?? '') ?>">
                         </div>
 
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <label class="form-label">Pencarian</label>
-                            <div class="input-group">
-                                <input type="text" name="search" class="form-control"
-                                    placeholder="Cari nama siswa, NISN, atau kategori..."
-                                    value="<?= esc($filters['search'] ?? '') ?>">
-                                <button class="btn btn-primary" type="submit">
-                                    <i class="bx bx-search-alt"></i>
-                                </button>
-                            </div>
+                            <input type="text" name="search" class="form-control" placeholder="Cari nama, NISN, deskripsi..." value="<?= esc($filters['search'] ?? '') ?>">
+                        </div>
+
+                        <div class="col-md-2">
+                            <label class="form-label d-block">&nbsp;</label>
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="bx bx-search me-1"></i> Filter
+                            </button>
                         </div>
                     </div>
+                </form>
 
+                <?php if (!empty(array_filter($filters, fn($v) => !empty($v) && $v !== $filters['class_id']))): ?>
                     <div class="mt-3">
-                        <button type="submit" class="btn btn-primary waves-effect waves-light">
-                            <i class="bx bx-filter-alt me-1"></i> Terapkan Filter
-                        </button>
-                        <a href="<?= base_url('homeroom-teacher/violations') ?>" class="btn btn-secondary waves-effect">
-                            <i class="bx bx-revision me-1"></i> Reset
+                        <a href="<?= route_to('homeroom.violations.index') ?>" class="btn btn-sm btn-soft-secondary">
+                            <i class="bx bx-x-circle me-1"></i> Reset Filter
                         </a>
                     </div>
-                </form>
+                <?php endif; ?>
             </div>
         </div>
     </div>
@@ -227,115 +164,93 @@
     <div class="col-12">
         <div class="card">
             <div class="card-header">
-                <div class="d-flex align-items-center justify-content-between">
-                    <h4 class="card-title mb-0">Daftar Pelanggaran</h4>
-                    <span class="badge bg-primary"><?= count($violations) ?> Data</span>
-                </div>
+                <h4 class="card-title mb-0">
+                    <i class="bx bx-list-ul me-1"></i> Daftar Pelanggaran
+                    <span class="badge bg-primary ms-2"><?= count($violations) ?></span>
+                </h4>
             </div>
             <div class="card-body">
                 <?php if (empty($violations)): ?>
                     <div class="text-center py-5">
-                        <div class="avatar-md mx-auto mb-4">
+                        <div class="avatar-lg mx-auto mb-4">
                             <div class="avatar-title bg-soft-primary text-primary rounded-circle font-size-24">
-                                <i class="bx bx-check-circle"></i>
+                                <i class="mdi mdi-check-circle-outline"></i>
                             </div>
                         </div>
-                        <h5 class="mt-2">Belum Ada Data Pelanggaran</h5>
-                        <p class="text-muted mb-0">Data pelanggaran akan muncul di sini setelah dicatat</p>
+                        <h5 class="text-muted">Tidak ada data pelanggaran</h5>
+                        <p class="text-muted">Belum ada pelanggaran yang tercatat untuk filter yang dipilih.</p>
+                        <a href="<?= route_to('homeroom.violations.create') ?>" class="btn btn-primary mt-3">
+                            <i class="bx bx-plus-circle me-1"></i> Catat Pelanggaran Baru
+                        </a>
                     </div>
                 <?php else: ?>
                     <div class="table-responsive">
-                        <table class="table table-hover table-nowrap align-middle mb-0">
+                        <table class="table table-hover table-bordered align-middle mb-0">
                             <thead class="table-light">
                                 <tr>
-                                    <th width="5%">No</th>
+                                    <th width="50">No</th>
                                     <th>Tanggal</th>
                                     <th>Siswa</th>
                                     <th>Kategori</th>
-                                    <th class="text-center">Tingkat</th>
+                                    <th>Tingkat</th>
                                     <th class="text-center">Poin</th>
                                     <th>Status</th>
-                                    <th>Dilaporkan</th>
-                                    <th class="text-center">Aksi</th>
+                                    <th width="100">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <?php $no = 1; ?>
-                                <?php foreach ($violations as $violation): ?>
+                                <?php foreach ($violations as $index => $v): ?>
                                     <tr>
-                                        <td><?= $no++ ?></td>
+                                        <td class="text-center"><?= $index + 1 ?></td>
                                         <td>
-                                            <div class="font-size-13">
-                                                <?= date('d/m/Y', strtotime($violation['violation_date'])) ?>
-                                            </div>
-                                            <small class="text-muted">
-                                                <?= date('H:i', strtotime($violation['created_at'])) ?>
-                                            </small>
+                                            <span class="text-nowrap">
+                                                <?= date('d/m/Y', strtotime($v['violation_date'])) ?>
+                                            </span>
                                         </td>
                                         <td>
-                                            <div class="d-flex align-items-center">
-                                                <div class="avatar-xs flex-shrink-0 me-2">
-                                                    <span class="avatar-title rounded-circle bg-primary bg-soft text-primary font-size-14">
-                                                        <?= strtoupper(substr($violation['student_name'], 0, 1)) ?>
-                                                    </span>
-                                                </div>
-                                                <div>
-                                                    <h5 class="font-size-14 mb-0"><?= esc($violation['student_name']) ?></h5>
-                                                    <p class="text-muted mb-0 font-size-12"><?= esc($violation['nisn']) ?></p>
-                                                </div>
+                                            <div>
+                                                <strong><?= esc($v['student_name']) ?></strong>
+                                                <div class="text-muted font-size-11"><?= esc($v['nisn']) ?></div>
                                             </div>
                                         </td>
+                                        <td><?= esc($v['category_name']) ?></td>
                                         <td>
-                                            <span class="text-dark"><?= esc($violation['category_name']) ?></span>
-                                            <?php if ($violation['is_repeat_offender']): ?>
-                                                <br><span class="badge bg-danger-subtle text-danger">
-                                                    <i class="bx bx-error-circle"></i> Pelanggar Berulang
-                                                </span>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td class="text-center">
                                             <?php
-                                            $severityClass = [
-                                                'Ringan' => 'success',
-                                                'Sedang' => 'warning',
-                                                'Berat' => 'danger'
-                                            ];
-                                            $class = $severityClass[$violation['severity_level']] ?? 'secondary';
+                                            $badgeClass = match ($v['severity_level']) {
+                                                'Ringan' => 'bg-info',
+                                                'Sedang' => 'bg-warning',
+                                                'Berat' => 'bg-danger',
+                                                default => 'bg-secondary'
+                                            };
                                             ?>
-                                            <span class="badge bg-<?= $class ?>-subtle text-<?= $class ?>">
-                                                <?= esc($violation['severity_level']) ?>
+                                            <span class="badge <?= $badgeClass ?>">
+                                                <?= esc($v['severity_level']) ?>
                                             </span>
                                         </td>
                                         <td class="text-center">
-                                            <span class="badge bg-danger rounded-pill"><?= $violation['points'] ?></span>
+                                            <span class="badge bg-danger rounded-pill">
+                                                <?= $v['points'] ?> Poin
+                                            </span>
                                         </td>
                                         <td>
                                             <?php
-                                            $statusClass = [
-                                                'Dilaporkan' => 'warning',
-                                                'Dalam Proses' => 'info',
-                                                'Selesai' => 'success'
-                                            ];
-                                            $class = $statusClass[$violation['status']] ?? 'secondary';
+                                            $statusBadge = match ($v['status']) {
+                                                'Dilaporkan' => 'bg-warning',
+                                                'Dalam Proses' => 'bg-info',
+                                                'Selesai' => 'bg-success',
+                                                'Dibatalkan' => 'bg-secondary',
+                                                default => 'bg-secondary'
+                                            };
                                             ?>
-                                            <span class="badge bg-<?= $class ?>-subtle text-<?= $class ?>">
-                                                <?= esc($violation['status']) ?>
+                                            <span class="badge <?= $statusBadge ?>">
+                                                <?= esc($v['status']) ?>
                                             </span>
-                                            <?php if ($violation['parent_notified']): ?>
-                                                <br><small class="text-success">
-                                                    <i class="bx bx-check"></i> Ortu diberitahu
-                                                </small>
-                                            <?php endif; ?>
                                         </td>
                                         <td>
-                                            <div class="font-size-12 text-muted">
-                                                <?= esc($violation['reported_by_name'] ?? 'System') ?>
-                                            </div>
-                                        </td>
-                                        <td class="text-center">
-                                            <a href="<?= base_url('homeroom-teacher/violations/' . $violation['id']) ?>"
-                                                class="btn btn-sm btn-soft-primary" title="Lihat Detail">
-                                                <i class="bx bx-show-alt"></i>
+                                            <a href="<?= route_to('homeroom.violations.detail', $v['id']) ?>"
+                                                class="btn btn-sm btn-soft-primary"
+                                                title="Lihat Detail">
+                                                <i class="bx bx-show"></i>
                                             </a>
                                         </td>
                                     </tr>
@@ -349,65 +264,15 @@
     </div>
 </div>
 
+<?= $this->endSection() ?>
+
+<?= $this->section('scripts') ?>
 <script>
-    // Auto-dismiss alerts
-    document.addEventListener('DOMContentLoaded', function() {
-        setTimeout(function() {
-            const alerts = document.querySelectorAll('.alert');
-            alerts.forEach(function(alert) {
-                const bsAlert = new bootstrap.Alert(alert);
-                bsAlert.close();
-            });
-        }, 5000);
-    });
-
-    // Quick filter toggle
-    const filterForm = document.getElementById('filterForm');
-    if (filterForm) {
-        // Auto-submit on select change (optional)
-        const selects = filterForm.querySelectorAll('select');
-        selects.forEach(select => {
-            select.addEventListener('change', function() {
-                // Uncomment to enable auto-submit
-                // filterForm.submit();
-            });
+    // Auto submit filter on select change
+    document.querySelectorAll('#filterForm select').forEach(select => {
+        select.addEventListener('change', function() {
+            document.getElementById('filterForm').submit();
         });
-    }
+    });
 </script>
-
-<style>
-    .mini-stats-wid .mini-stat-icon {
-        overflow: hidden;
-        position: relative;
-    }
-
-    .mini-stats-wid .mini-stat-icon::after {
-        content: "";
-        position: absolute;
-        width: 100%;
-        height: 100%;
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 50%;
-        top: -50%;
-        left: -50%;
-    }
-
-    .table> :not(caption)>*>* {
-        padding: 0.75rem 0.75rem;
-    }
-
-    .avatar-xs {
-        width: 2rem;
-        height: 2rem;
-    }
-
-    .avatar-title {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 100%;
-        height: 100%;
-    }
-</style>
-
 <?= $this->endSection() ?>

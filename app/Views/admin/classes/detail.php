@@ -23,10 +23,10 @@
 
                 <dl class="row mb-0">
                     <dt class="col-sm-4">Nama Kelas</dt>
-                    <dd class="col-sm-8"><?= esc($class['name']) ?></dd>
+                    <dd class="col-sm-8"><?= esc($class['class_name']) ?></dd>
 
                     <dt class="col-sm-4">Wali Kelas</dt>
-                    <dd class="col-sm-8"><?= esc($class['homeroom']) ?></dd>
+                    <dd class="col-sm-8"><?= esc($class['homeroom_teacher_id']) ?></dd>
 
                     <dt class="col-sm-4">Jumlah Siswa</dt>
                     <dd class="col-sm-8"><?= esc($class['student_count']) ?></dd>
@@ -53,7 +53,7 @@
                             <?php foreach ($students as $student): ?>
                                 <tr>
                                     <td><?= esc($student['nis']) ?></td>
-                                    <td><?= esc($student['name']) ?></td>
+                                    <td><?= esc($student['user_id']) ?></td>
                                 </tr>
                             <?php endforeach; ?>
                         </tbody>
