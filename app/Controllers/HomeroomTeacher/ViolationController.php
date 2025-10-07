@@ -3,14 +3,24 @@
 /**
  * File Path: app/Controllers/HomeroomTeacher/ViolationController.php
  * 
- * Homeroom Teacher Violation Controller
+ * Homeroom Teacher Violation Controller - FIXED VERSION
  * Controller untuk wali kelas mengelola pelanggaran siswa
  * 
+ * CHANGES:
+ * ✅ Replace session()->get('logged_in') with is_logged_in()
+ * ✅ Replace session()->get('role_name') !== 'WALI_KELAS' with !is_wali_kelas()
+ * ✅ Replace session()->get('user_id') with auth_id()
+ * ✅ Update redirect URLs to use route_to()
+ * ✅ ADD detail($id) method (was missing!)
+ * ✅ Remove unnecessary $session property
+ * 
  * @package    SIB-K
- * @subpackage Controllers
+ * @subpackage Controllers\HomeroomTeacher
  * @category   Controller
  * @author     Development Team
  * @created    2025-01-06
+ * @updated    2025-01-07 (Fixed + Added detail method)
+ * @version    1.1.0
  */
 
 namespace App\Controllers\HomeroomTeacher;
@@ -29,7 +39,6 @@ class ViolationController extends BaseController
     protected $studentModel;
     protected $classModel;
     protected $userModel;
-    protected $session;
 
     public function __construct()
     {
@@ -38,27 +47,27 @@ class ViolationController extends BaseController
         $this->studentModel = new StudentModel();
         $this->classModel = new ClassModel();
         $this->userModel = new UserModel();
-        $this->session = session();
     }
 
     /**
      * Display violations list
      * 
-     * @return string
+     * @return string|RedirectResponse
      */
     public function index()
     {
-        // Check authentication
-        if (!session()->get('logged_in')) {
+        // ✅ FIXED: Use helper function
+        if (!is_logged_in()) {
             return redirect()->to('/login')->with('error', 'Silakan login terlebih dahulu');
         }
 
-        // Check role
-        if (session()->get('role_name') !== 'WALI_KELAS') {
-            return redirect()->to('/')->with('error', 'Akses ditolak');
+        // ✅ FIXED: Use helper function for role check
+        if (!is_wali_kelas()) {
+            return redirect()->to('/')->with('error', 'Akses ditolak. Halaman ini hanya untuk Wali Kelas.');
         }
 
-        $userId = session()->get('user_id');
+        // ✅ FIXED: Use helper function
+        $userId = auth_id();
 
         // Get homeroom class
         $homeroomClass = $this->getHomeroomClass($userId);
@@ -66,12 +75,14 @@ class ViolationController extends BaseController
         if (!$homeroomClass) {
             return view('homeroom_teacher/no_class', [
                 'title' => 'Daftar Pelanggaran',
+                'pageTitle' => 'Tidak Ada Kelas',
+                'message' => 'Anda belum ditugaskan sebagai wali kelas untuk tahun ajaran aktif.',
             ]);
         }
 
         $classId = $homeroomClass['id'];
 
-        // Get filters
+        // Get filters from query string
         $filters = [
             'class_id' => $classId,
             'status' => $this->request->getGet('status'),
@@ -83,18 +94,28 @@ class ViolationController extends BaseController
             'search' => $this->request->getGet('search'),
         ];
 
-        // Get violations
+        // Get violations with filters
         $violations = $this->getViolations($filters);
 
-        // Get filter options
+        // Get data for filters
+        $students = $this->getClassStudents($classId);
+        $categories = $this->categoryModel
+            ->where('is_active', 1)
+            ->orderBy('category_name', 'ASC')
+            ->findAll();
+
         $data = [
             'title' => 'Daftar Pelanggaran',
+            'pageTitle' => 'Daftar Pelanggaran - ' . $homeroomClass['class_name'],
+            'breadcrumbs' => [
+                ['title' => 'Dashboard', 'url' => route_to('homeroom.dashboard')],
+                ['title' => 'Pelanggaran', 'url' => '#', 'active' => true],
+            ],
             'homeroom_class' => $homeroomClass,
             'violations' => $violations,
-            'students' => $this->getClassStudents($classId),
-            'categories' => $this->categoryModel->where('is_active', 1)->findAll(),
+            'students' => $students,
+            'categories' => $categories,
             'filters' => $filters,
-            'statistics' => $this->getViolationStatistics($classId),
         ];
 
         return view('homeroom_teacher/violations/index', $data);
@@ -103,37 +124,59 @@ class ViolationController extends BaseController
     /**
      * Show create violation form
      * 
-     * @return string
+     * @return string|RedirectResponse
      */
     public function create()
     {
-        // Check authentication
-        if (!session()->get('logged_in')) {
+        // ✅ FIXED: Use helper functions
+        if (!is_logged_in()) {
             return redirect()->to('/login')->with('error', 'Silakan login terlebih dahulu');
         }
 
-        // Check role
-        if (session()->get('role_name') !== 'WALI_KELAS') {
-            return redirect()->to('/')->with('error', 'Akses ditolak');
+        if (!is_wali_kelas()) {
+            return redirect()->to('/')->with('error', 'Akses ditolak. Halaman ini hanya untuk Wali Kelas.');
         }
 
-        $userId = session()->get('user_id');
+        $userId = auth_id();
 
         // Get homeroom class
         $homeroomClass = $this->getHomeroomClass($userId);
 
         if (!$homeroomClass) {
-            return redirect()->to('homeroom-teacher/dashboard')
-                ->with('error', 'Anda belum ditugaskan sebagai wali kelas');
+            return redirect()->to(route_to('homeroom.dashboard'))
+                ->with('error', 'Anda belum ditugaskan sebagai wali kelas.');
         }
 
         $classId = $homeroomClass['id'];
 
+        // Get students in class
+        $students = $this->getClassStudents($classId);
+
+        // Get active violation categories
+        $categories = $this->categoryModel
+            ->where('is_active', 1)
+            ->orderBy('severity_level', 'ASC')
+            ->orderBy('category_name', 'ASC')
+            ->findAll();
+
+        // Group categories by severity
+        $groupedCategories = [];
+        foreach ($categories as $category) {
+            $groupedCategories[$category['severity_level']][] = $category;
+        }
+
         $data = [
-            'title' => 'Catat Pelanggaran Siswa',
+            'title' => 'Tambah Pelanggaran',
+            'pageTitle' => 'Tambah Pelanggaran Baru',
+            'breadcrumbs' => [
+                ['title' => 'Dashboard', 'url' => route_to('homeroom.dashboard')],
+                ['title' => 'Pelanggaran', 'url' => route_to('homeroom.violations.index')],
+                ['title' => 'Tambah', 'url' => '#', 'active' => true],
+            ],
             'homeroom_class' => $homeroomClass,
-            'students' => $this->getClassStudents($classId),
-            'categories' => $this->categoryModel->where('is_active', 1)->orderBy('category_name')->findAll(),
+            'students' => $students,
+            'categories' => $categories,
+            'grouped_categories' => $groupedCategories,
         ];
 
         return view('homeroom_teacher/violations/create', $data);
@@ -142,30 +185,27 @@ class ViolationController extends BaseController
     /**
      * Store new violation
      * 
-     * @return \CodeIgniter\HTTP\RedirectResponse
+     * @return RedirectResponse
      */
     public function store()
     {
-        // Check authentication
-        if (!session()->get('logged_in')) {
+        // ✅ FIXED: Use helper functions
+        if (!is_logged_in()) {
             return redirect()->to('/login')->with('error', 'Silakan login terlebih dahulu');
         }
 
-        // Check role
-        if (session()->get('role_name') !== 'WALI_KELAS') {
+        if (!is_wali_kelas()) {
             return redirect()->to('/')->with('error', 'Akses ditolak');
         }
 
-        $userId = session()->get('user_id');
+        $userId = auth_id();
 
-        // Validate input
+        // Validation rules
         $rules = [
-            'student_id' => 'required|integer',
-            'category_id' => 'required|integer',
+            'student_id' => 'required|numeric',
+            'category_id' => 'required|numeric',
             'violation_date' => 'required|valid_date',
             'description' => 'required|min_length[10]',
-            'location' => 'permit_empty|max_length[200]',
-            'witness' => 'permit_empty|max_length[200]',
         ];
 
         if (!$this->validate($rules)) {
@@ -178,57 +218,76 @@ class ViolationController extends BaseController
         $homeroomClass = $this->getHomeroomClass($userId);
 
         if (!$homeroomClass) {
-            return redirect()->to('homeroom-teacher/dashboard')
-                ->with('error', 'Anda belum ditugaskan sebagai wali kelas');
+            return redirect()->to(route_to('homeroom.dashboard'))
+                ->with('error', 'Anda belum ditugaskan sebagai wali kelas.');
         }
 
-        // Validate student belongs to this class
-        $studentId = $this->request->getPost('student_id');
-        $student = $this->studentModel->find($studentId);
+        // Verify student is in homeroom class
+        $student = $this->studentModel->find($this->request->getPost('student_id'));
 
         if (!$student || $student['class_id'] != $homeroomClass['id']) {
             return redirect()->back()
                 ->withInput()
-                ->with('error', 'Siswa tidak terdaftar di kelas Anda');
+                ->with('error', 'Siswa yang dipilih bukan dari kelas yang Anda ampu.');
         }
 
-        // Prepare data
-        $data = [
-            'student_id' => $studentId,
-            'category_id' => $this->request->getPost('category_id'),
-            'violation_date' => $this->request->getPost('violation_date'),
-            'description' => $this->request->getPost('description'),
-            'location' => $this->request->getPost('location'),
-            'witness' => $this->request->getPost('witness'),
-            'reported_by' => $userId,
-            'status' => 'Dilaporkan',
-            'is_repeat_offender' => $this->checkRepeatOffender($studentId, $this->request->getPost('category_id')),
-        ];
+        // Get category to get points
+        $category = $this->categoryModel->find($this->request->getPost('category_id'));
+
+        if (!$category) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Kategori pelanggaran tidak valid.');
+        }
+
+        $db = \Config\Database::connect();
+        $db->transStart();
 
         try {
-            $violationId = $this->violationModel->insert($data);
+            // Prepare violation data
+            $violationData = [
+                'student_id' => $this->request->getPost('student_id'),
+                'category_id' => $this->request->getPost('category_id'),
+                'violation_date' => $this->request->getPost('violation_date'),
+                'description' => $this->request->getPost('description'),
+                'location' => $this->request->getPost('location'),
+                'witness' => $this->request->getPost('witness'),
+                'status' => 'Dilaporkan',
+                'reported_by' => $userId,
+                'handled_by' => $userId, // Self-assigned
+            ];
 
-            if (!$violationId) {
-                return redirect()->back()
-                    ->withInput()
-                    ->with('errors', $this->violationModel->errors());
+            // Handle file upload if exists
+            $evidence = $this->request->getFile('evidence');
+            if ($evidence && $evidence->isValid() && !$evidence->hasMoved()) {
+                $newName = $evidence->getRandomName();
+                $evidence->move(FCPATH . 'uploads/violations', $newName);
+                $violationData['evidence'] = $newName;
             }
 
-            // Check if parent notification is needed
-            $category = $this->categoryModel->find($data['category_id']);
-            $notifyParent = ($category['severity_level'] === 'Berat' || $data['is_repeat_offender']);
-
-            if ($notifyParent) {
-                // Update parent notification flag
-                $this->violationModel->update($violationId, ['parent_notified' => 1]);
-
-                // TODO: Send notification to parent (implement later in notification module)
+            // Insert violation
+            if (!$this->violationModel->insert($violationData)) {
+                throw new \Exception('Gagal menyimpan data pelanggaran');
             }
 
-            return redirect()->to('homeroom-teacher/violations')
-                ->with('success', 'Pelanggaran berhasil dicatat. ' .
-                    ($notifyParent ? 'Notifikasi telah dikirim ke orang tua.' : ''));
+            $violationId = $this->violationModel->getInsertID();
+
+            // Update student violation points
+            $newPoints = $student['violation_points'] + $category['points'];
+            $this->studentModel->update($student['id'], [
+                'violation_points' => $newPoints
+            ]);
+
+            $db->transComplete();
+
+            if ($db->transStatus() === false) {
+                throw new \Exception('Transaksi database gagal');
+            }
+
+            return redirect()->to(route_to('homeroom.violations.detail', $violationId))
+                ->with('success', 'Pelanggaran berhasil ditambahkan.');
         } catch (\Exception $e) {
+            $db->transRollback();
             log_message('error', 'Error storing violation: ' . $e->getMessage());
 
             return redirect()->back()
@@ -238,63 +297,70 @@ class ViolationController extends BaseController
     }
 
     /**
-     * Show violation detail
+     * ✨ NEW METHOD - View violation detail
      * 
-     * @param int $id
-     * @return string
+     * @param int $id Violation ID
+     * @return string|RedirectResponse
      */
-    public function show($id)
+    public function detail($id)
     {
-        // Check authentication
-        if (!session()->get('logged_in')) {
+        // ✅ FIXED: Use helper functions
+        if (!is_logged_in()) {
             return redirect()->to('/login')->with('error', 'Silakan login terlebih dahulu');
         }
 
-        // Check role
-        if (session()->get('role_name') !== 'WALI_KELAS') {
+        if (!is_wali_kelas()) {
             return redirect()->to('/')->with('error', 'Akses ditolak');
         }
 
-        $userId = session()->get('user_id');
+        $userId = auth_id();
+
+        // Get homeroom class
         $homeroomClass = $this->getHomeroomClass($userId);
 
         if (!$homeroomClass) {
-            return redirect()->to('homeroom-teacher/dashboard')
-                ->with('error', 'Anda belum ditugaskan sebagai wali kelas');
+            return redirect()->to(route_to('homeroom.dashboard'))
+                ->with('error', 'Anda belum ditugaskan sebagai wali kelas.');
         }
 
-        // Get violation with details
+        $classId = $homeroomClass['id'];
+
+        // Get violation detail with related data
         $violation = $this->violationModel
             ->select('violations.*, 
                       students.full_name as student_name,
                       students.nisn,
                       students.gender,
-                      classes.class_name,
+                      students.class_id,
+                      students.violation_points as total_points,
                       violation_categories.category_name,
                       violation_categories.severity_level,
-                      violation_categories.points,
-                      reported_by.full_name as reported_by_name,
-                      handled_by.full_name as handled_by_name')
+                      violation_categories.points as category_points,
+                      violation_categories.description as category_description,
+                      reporter.full_name as reporter_name,
+                      reporter.email as reporter_email,
+                      handler.full_name as handler_name,
+                      handler.email as handler_email')
             ->join('students', 'students.id = violations.student_id')
-            ->join('classes', 'classes.id = students.class_id')
             ->join('violation_categories', 'violation_categories.id = violations.category_id')
-            ->join('users as reported_by', 'reported_by.id = violations.reported_by', 'left')
-            ->join('users as handled_by', 'handled_by.id = violations.handled_by', 'left')
+            ->join('users as reporter', 'reporter.id = violations.reported_by', 'left')
+            ->join('users as handler', 'handler.id = violations.handled_by', 'left')
             ->where('violations.id', $id)
             ->first();
 
+        // Check if violation exists
         if (!$violation) {
-            return redirect()->to('homeroom-teacher/violations')
-                ->with('error', 'Data pelanggaran tidak ditemukan');
+            return redirect()->to(route_to('homeroom.violations.index'))
+                ->with('error', 'Data pelanggaran tidak ditemukan.');
         }
 
         // Check if violation belongs to homeroom class
-        if ($violation['class_name'] !== $homeroomClass['class_name']) {
-            return redirect()->to('homeroom-teacher/violations')
-                ->with('error', 'Anda tidak memiliki akses ke data ini');
+        if ($violation['class_id'] != $classId) {
+            return redirect()->to(route_to('homeroom.violations.index'))
+                ->with('error', 'Pelanggaran ini bukan dari kelas yang Anda ampu.');
         }
 
-        // Get sanctions
+        // Get sanctions for this violation
         $db = \Config\Database::connect();
         $sanctions = $db->table('sanctions')
             ->select('sanctions.*, users.full_name as assigned_by_name')
@@ -305,9 +371,12 @@ class ViolationController extends BaseController
             ->get()
             ->getResultArray();
 
-        // Get student violation history
+        // Get student violation history (excluding current violation)
         $violationHistory = $this->violationModel
-            ->select('violations.*, violation_categories.category_name, violation_categories.points')
+            ->select('violations.*, 
+                      violation_categories.category_name,
+                      violation_categories.severity_level,
+                      violation_categories.points')
             ->join('violation_categories', 'violation_categories.id = violations.category_id')
             ->where('violations.student_id', $violation['student_id'])
             ->where('violations.id !=', $id)
@@ -315,8 +384,15 @@ class ViolationController extends BaseController
             ->limit(10)
             ->findAll();
 
+        // Prepare data for view
         $data = [
-            'title' => 'Detail Pelanggaran',
+            'title' => 'Detail Pelanggaran - ' . $violation['student_name'],
+            'pageTitle' => 'Detail Pelanggaran',
+            'breadcrumbs' => [
+                ['title' => 'Dashboard', 'url' => route_to('homeroom.dashboard')],
+                ['title' => 'Pelanggaran', 'url' => route_to('homeroom.violations.index')],
+                ['title' => 'Detail', 'url' => '#', 'active' => true],
+            ],
             'homeroom_class' => $homeroomClass,
             'violation' => $violation,
             'sanctions' => $sanctions,
@@ -338,6 +414,7 @@ class ViolationController extends BaseController
             ->select('classes.*, academic_years.year_name, academic_years.semester')
             ->join('academic_years', 'academic_years.id = classes.academic_year_id', 'left')
             ->where('classes.homeroom_teacher_id', $userId)
+            ->where('classes.is_active', 1)
             ->where('academic_years.is_active', 1)
             ->first();
     }
@@ -372,10 +449,10 @@ class ViolationController extends BaseController
                       violation_categories.category_name,
                       violation_categories.severity_level,
                       violation_categories.points,
-                      reported_by.full_name as reported_by_name')
+                      reporter.full_name as reporter_name')
             ->join('students', 'students.id = violations.student_id')
             ->join('violation_categories', 'violation_categories.id = violations.category_id')
-            ->join('users as reported_by', 'reported_by.id = violations.reported_by', 'left')
+            ->join('users as reporter', 'reporter.id = violations.reported_by', 'left')
             ->where('students.class_id', $filters['class_id']);
 
         // Apply filters
@@ -407,85 +484,13 @@ class ViolationController extends BaseController
             $builder->groupStart()
                 ->like('students.full_name', $filters['search'])
                 ->orLike('students.nisn', $filters['search'])
-                ->orLike('violation_categories.category_name', $filters['search'])
+                ->orLike('violations.description', $filters['search'])
                 ->groupEnd();
         }
 
-        return $builder->orderBy('violations.violation_date', 'DESC')
+        return $builder
+            ->orderBy('violations.violation_date', 'DESC')
             ->orderBy('violations.created_at', 'DESC')
             ->findAll();
-    }
-
-    /**
-     * Get violation statistics
-     * 
-     * @param int $classId
-     * @return array
-     */
-    private function getViolationStatistics($classId)
-    {
-        $db = \Config\Database::connect();
-
-        // Total violations
-        $total = $db->table('violations')
-            ->join('students', 'students.id = violations.student_id')
-            ->where('students.class_id', $classId)
-            ->where('violations.deleted_at', null)
-            ->countAllResults();
-
-        // This month
-        $thisMonth = $db->table('violations')
-            ->join('students', 'students.id = violations.student_id')
-            ->where('students.class_id', $classId)
-            ->where('violations.violation_date >=', date('Y-m-01'))
-            ->where('violations.deleted_at', null)
-            ->countAllResults();
-
-        // By severity
-        $bySeverity = $db->table('violations')
-            ->select('violation_categories.severity_level, COUNT(*) as count')
-            ->join('students', 'students.id = violations.student_id')
-            ->join('violation_categories', 'violation_categories.id = violations.category_id')
-            ->where('students.class_id', $classId)
-            ->where('violations.deleted_at', null)
-            ->groupBy('violation_categories.severity_level')
-            ->get()
-            ->getResultArray();
-
-        $severity = [
-            'Ringan' => 0,
-            'Sedang' => 0,
-            'Berat' => 0,
-        ];
-
-        foreach ($bySeverity as $row) {
-            $severity[$row['severity_level']] = (int) $row['count'];
-        }
-
-        return [
-            'total' => $total,
-            'this_month' => $thisMonth,
-            'severity' => $severity,
-        ];
-    }
-
-    /**
-     * Check if student is repeat offender
-     * 
-     * @param int $studentId
-     * @param int $categoryId
-     * @return int
-     */
-    private function checkRepeatOffender($studentId, $categoryId)
-    {
-        $threeMonthsAgo = date('Y-m-d', strtotime('-3 months'));
-
-        $count = $this->violationModel
-            ->where('student_id', $studentId)
-            ->where('category_id', $categoryId)
-            ->where('violation_date >=', $threeMonthsAgo)
-            ->countAllResults();
-
-        return $count > 0 ? 1 : 0;
     }
 }

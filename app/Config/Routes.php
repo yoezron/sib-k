@@ -275,22 +275,109 @@ $routes->group('api', ['namespace' => 'App\Controllers\Api'], function ($routes)
 |--------------------------------------------------------------------------
 | Wali Kelas Routes (Homeroom Teacher)
 |--------------------------------------------------------------------------
-| Filter: auth, role:Wali Kelas
+| 
+| COPY & PASTE SELURUH SECTION INI KE app/Config/Routes.php
+| 
+| Prefix: homeroom
+| Filter: auth (authentication required)
+| Namespace: App\Controllers\HomeroomTeacher
+| 
+| CHANGES FROM OLD VERSION:
+| ✅ Prefix: 'homeroomteacher' → 'homeroom'
+| ✅ Added named routes for all endpoints
+| ✅ Consistent with AuthLibrary redirect path
+| ✅ All methods exist in controllers
+| 
+| @package    SIB-K
+| @updated    2025-01-07
 */
-$routes->group('homeroomteacher', ['filter' => 'auth', 'namespace' => 'App\Controllers\HomeroomTeacher'], function ($routes) {
-    // Dashboard
-    $routes->get('dashboard', 'DashboardController::index');
-    $routes->get('dashboard/getStats', 'DashboardController::getStats');
 
-    // Violations
-    $routes->get('violations', 'ViolationController::index');
-    $routes->get('violations/create', 'ViolationController::create');
-    $routes->post('violations/store', 'ViolationController::store');
-    $routes->get('violations/detail/(:num)', 'ViolationController::detail/$1');
+$routes->group('homeroom', [
+    'filter' => 'auth',
+    'namespace' => 'App\Controllers\HomeroomTeacher'
+], function ($routes) {
 
-    // Class Reports
-    $routes->get('reports', 'ClassReportController::index');
-    $routes->get('reports/export-pdf', 'ClassReportController::exportPDF');
-    $routes->get('reports/export-excel', 'ClassReportController::exportExcel');
-    $routes->get('reports/data', 'ClassReportController::getReportData');
+    // ================================
+    // DASHBOARD ROUTES
+    // ================================
+
+    // Main Dashboard
+    // URL: /homeroom/dashboard
+    // Controller: DashboardController::index()
+    $routes->get('dashboard', 'DashboardController::index', [
+        'as' => 'homeroom.dashboard'
+    ]);
+
+    // Get Dashboard Statistics (AJAX)
+    // URL: /homeroom/dashboard/stats
+    // Controller: DashboardController::getStats()
+    $routes->get('dashboard/stats', 'DashboardController::getStats', [
+        'as' => 'homeroom.dashboard.stats'
+    ]);
+
+
+    // ================================
+    // VIOLATION ROUTES
+    // ================================
+
+    // List All Violations
+    // URL: /homeroom/violations
+    // Controller: ViolationController::index()
+    $routes->get('violations', 'ViolationController::index', [
+        'as' => 'homeroom.violations.index'
+    ]);
+
+    // Show Create Violation Form
+    // URL: /homeroom/violations/create
+    // Controller: ViolationController::create()
+    $routes->get('violations/create', 'ViolationController::create', [
+        'as' => 'homeroom.violations.create'
+    ]);
+
+    // Store New Violation (POST)
+    // URL: /homeroom/violations/store
+    // Controller: ViolationController::store()
+    $routes->post('violations/store', 'ViolationController::store', [
+        'as' => 'homeroom.violations.store'
+    ]);
+
+    // View Violation Detail
+    // URL: /homeroom/violations/detail/{id}
+    // Controller: ViolationController::detail($id)
+    $routes->get('violations/detail/(:num)', 'ViolationController::detail/$1', [
+        'as' => 'homeroom.violations.detail'
+    ]);
+
+
+    // ================================
+    // CLASS REPORT ROUTES
+    // ================================
+
+    // View Class Report Summary
+    // URL: /homeroom/reports
+    // Controller: ClassReportController::index()
+    $routes->get('reports', 'ClassReportController::index', [
+        'as' => 'homeroom.reports.index'
+    ]);
+
+    // Get Report Data (AJAX)
+    // URL: /homeroom/reports/data
+    // Controller: ClassReportController::getReportData()
+    $routes->get('reports/data', 'ClassReportController::getReportData', [
+        'as' => 'homeroom.reports.data'
+    ]);
+
+    // Export Report to PDF
+    // URL: /homeroom/reports/export-pdf
+    // Controller: ClassReportController::exportPDF()
+    $routes->get('reports/export-pdf', 'ClassReportController::exportPDF', [
+        'as' => 'homeroom.reports.pdf'
+    ]);
+
+    // Export Report to Excel
+    // URL: /homeroom/reports/export-excel
+    // Controller: ClassReportController::exportExcel()
+    $routes->get('reports/export-excel', 'ClassReportController::exportExcel', [
+        'as' => 'homeroom.reports.excel'
+    ]);
 });
