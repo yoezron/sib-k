@@ -270,3 +270,27 @@ $routes->group('api', ['namespace' => 'App\Controllers\Api'], function ($routes)
         $routes->post('(:num)/autosave', 'AssessmentApiController::autosave/$1');
     });
 });
+
+/*
+|--------------------------------------------------------------------------
+| Wali Kelas Routes (Homeroom Teacher)
+|--------------------------------------------------------------------------
+| Filter: auth, role:Wali Kelas
+*/
+$routes->group('homeroom-teacher', ['filter' => 'auth', 'namespace' => 'App\Controllers\HomeroomTeacher'], function ($routes) {
+    // Dashboard
+    $routes->get('dashboard', 'DashboardController::index');
+    $routes->get('dashboard/getStats', 'DashboardController::getStats');
+
+    // Violations
+    $routes->get('violations', 'ViolationController::index');
+    $routes->get('violations/create', 'ViolationController::create');
+    $routes->post('violations/store', 'ViolationController::store');
+    $routes->get('violations/detail/(:num)', 'ViolationController::detail/$1');
+
+    // Class Reports
+    $routes->get('reports', 'ClassReportController::index');
+    $routes->get('reports/export-pdf', 'ClassReportController::exportPDF');
+    $routes->get('reports/export-excel', 'ClassReportController::exportExcel');
+    $routes->get('reports/data', 'ClassReportController::getReportData');
+});
