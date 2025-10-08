@@ -387,7 +387,7 @@ class ClassReportController extends BaseController
 
         // Total violation points
         $pointsResult = $this->db->table('violations')
-            ->select('SUM(violation_categories.points) as total_points')
+            ->select('SUM(violation_categories.point_deduction) as total_points')
             ->join('students', 'students.id = violations.student_id')
             ->join('violation_categories', 'violation_categories.id = violations.category_id')
             ->where('students.class_id', $classId)
@@ -491,7 +491,7 @@ class ClassReportController extends BaseController
 
                 // Sum violation points
                 $pointsResult = $this->db->table('violations')
-                    ->select('SUM(violation_categories.points) as total_points')
+                    ->select('SUM(violation_categories.point_deduction) as total_points')
                     ->join('violation_categories', 'violation_categories.id = violations.category_id')
                     ->where('violations.student_id', $student['id'])
                     ->where('violations.violation_date >=', $startDate)
@@ -547,13 +547,13 @@ class ClassReportController extends BaseController
     {
         try {
             return $this->db->table('violation_categories')
-                ->select('violation_categories.severity, COUNT(violations.id) as count')
+                ->select('violation_categories.severity_level, COUNT(violations.id) as count')
                 ->join('violations', 'violations.category_id = violation_categories.id AND violations.deleted_at IS NULL', 'left')
                 ->join('students', 'students.id = violations.student_id', 'left')
                 ->where('students.class_id', $classId)
                 ->where('violations.violation_date >=', $startDate)
                 ->where('violations.violation_date <=', $endDate)
-                ->groupBy('violation_categories.severity')
+                ->groupBy('violation_categories.severity_level')
                 ->get()
                 ->getResultArray();
         } catch (\Exception $e) {
@@ -574,8 +574,8 @@ class ClassReportController extends BaseController
     {
         try {
             return $this->db->table('violation_categories')
-                ->select('violation_categories.category_name, 
-                         violation_categories.severity,
+                ->select('violation_categories.category_name,
+                         violation_categories.severity_level,
                          COUNT(violations.id) as count')
                 ->join('violations', 'violations.category_id = violation_categories.id AND violations.deleted_at IS NULL', 'left')
                 ->join('students', 'students.id = violations.student_id', 'left')
@@ -656,7 +656,7 @@ class ClassReportController extends BaseController
             return $this->db->table('students')
                 ->select('students.id, students.nisn, students.full_name,
                          COUNT(violations.id) as violation_count,
-                         SUM(violation_categories.points) as total_points')
+                         SUM(violation_categories.point_deduction) as total_points')
                 ->join('violations', 'violations.student_id = students.id AND violations.deleted_at IS NULL', 'left')
                 ->join('violation_categories', 'violation_categories.id = violations.category_id', 'left')
                 ->where('students.class_id', $classId)
@@ -687,7 +687,7 @@ class ClassReportController extends BaseController
         try {
             return $this->db->table('students')
                 ->select('students.id, students.nisn, students.full_name,
-                         SUM(violation_categories.points) as total_points,
+                         SUM(violation_categories.point_deduction) as total_points,
                          COUNT(violations.id) as violation_count')
                 ->join('violations', 'violations.student_id = students.id AND violations.deleted_at IS NULL', 'left')
                 ->join('violation_categories', 'violation_categories.id = violations.category_id', 'left')

@@ -278,13 +278,13 @@ $this->section('content');
                                                 </div>
                                             </td>
                                             <td>
-                                                <span class="badge badge-soft-<?= $violation['severity'] === 'Berat' ? 'danger' : ($violation['severity'] === 'Sedang' ? 'warning' : 'info') ?>">
+                                                <span class="badge badge-soft-<?= $violation['severity_level'] === 'Berat' ? 'danger' : ($violation['severity_level'] === 'Sedang' ? 'warning' : 'info') ?>">
                                                     <?= esc($violation['category_name']) ?>
                                                 </span>
                                             </td>
                                             <td>
-                                                <span class="point-indicator <?= $violation['points'] >= 50 ? 'high' : ($violation['points'] >= 25 ? 'medium' : 'low') ?>">
-                                                    <?= $violation['points'] ?>
+                                                <span class="point-indicator <?= $violation['point_deduction'] >= 50 ? 'high' : ($violation['point_deduction'] >= 25 ? 'medium' : 'low') ?>">
+                                                    <?= $violation['point_deduction'] ?>
                                                 </span>
                                             </td>
                                             <td>

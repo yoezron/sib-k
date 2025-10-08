@@ -77,7 +77,7 @@ class ViolationController extends BaseController
         $filters = [
             'student_id' => $this->request->getGet('student_id'),
             'category_id' => $this->request->getGet('category_id'),
-            'severity' => $this->request->getGet('severity'),
+            'severity_level' => $this->request->getGet('severity_level'),
             'start_date' => $this->request->getGet('start_date'),
             'end_date' => $this->request->getGet('end_date'),
             'status' => $this->request->getGet('status'),
@@ -143,7 +143,7 @@ class ViolationController extends BaseController
         // Get violation categories
         $categories = $this->categoryModel
             ->where('deleted_at', null)
-            ->orderBy('severity', 'ASC')
+            ->orderBy('severity_level', 'ASC')
             ->orderBy('category_name', 'ASC')
             ->findAll();
 
@@ -154,10 +154,12 @@ class ViolationController extends BaseController
             'Berat' => [],
         ];
 
-        foreach ($categories as $category) {
-            $severity = $category['severity'] ?? 'Sedang';
+        foreach ($categories as &$category) {
+            $severity = $category['severity_level'] ?? 'Sedang';
+            $category['points'] = $category['point_deduction'] ?? 0;
             $groupedCategories[$severity][] = $category;
         }
+        unset($category);
 
         // Prepare data for view
         $data = [
@@ -426,10 +428,15 @@ class ViolationController extends BaseController
     {
         try {
             return $this->db->table('students')
-                ->select('students.id, students.nisn, students.full_name')
+                ->select([
+                    'students.id',
+                    'students.nisn',
+                    "COALESCE(NULLIF(students.full_name, ''), users.full_name) AS full_name",
+                ])
+                ->join('users', 'users.id = students.user_id', 'left')
                 ->where('students.class_id', $classId)
                 ->where('students.deleted_at', null)
-                ->orderBy('students.full_name', 'ASC')
+                ->orderBy('full_name', 'ASC')
                 ->get()
                 ->getResultArray();
         } catch (\Exception $e) {
@@ -449,14 +456,15 @@ class ViolationController extends BaseController
     {
         try {
             $builder = $this->db->table('violations')
-                ->select('violations.*, 
-                         students.full_name as student_name, 
+                ->select('violations.*,
+                         COALESCE(NULLIF(students.full_name, \'\'), student_users.full_name) as student_name, 
                          students.nisn,
                          violation_categories.category_name,
-                         violation_categories.severity,
-                         violation_categories.points,
+                         violation_categories.severity_level,
+                         violation_categories.point_deduction,
                          users.full_name as reported_by_name')
                 ->join('students', 'students.id = violations.student_id')
+                ->join('users as student_users', 'student_users.id = students.user_id', 'left')
                 ->join('violation_categories', 'violation_categories.id = violations.category_id')
                 ->join('users', 'users.id = violations.reported_by')
                 ->where('students.class_id', $classId)
@@ -471,8 +479,8 @@ class ViolationController extends BaseController
                 $builder->where('violations.category_id', $filters['category_id']);
             }
 
-            if (!empty($filters['severity'])) {
-                $builder->where('violation_categories.severity', $filters['severity']);
+            if (!empty($filters['severity_level'])) {
+                $builder->where('violation_categories.severity_level', $filters['severity_level']);
             }
 
             if (!empty($filters['start_date'])) {
@@ -490,6 +498,7 @@ class ViolationController extends BaseController
             if (!empty($filters['search'])) {
                 $builder->groupStart()
                     ->like('students.full_name', $filters['search'])
+                    ->orLike('student_users.full_name', $filters['search'])
                     ->orLike('students.nisn', $filters['search'])
                     ->orLike('violation_categories.category_name', $filters['search'])
                     ->orLike('violations.description', $filters['search'])
@@ -516,14 +525,14 @@ class ViolationController extends BaseController
     {
         try {
             return $this->db->table('violations')
-                ->select('violations.*, 
+                ->select('violations.*,
                          students.id as student_id,
-                         students.full_name as student_name, 
+                         students.full_name as student_name,
                          students.nisn,
                          students.class_id,
                          violation_categories.category_name,
-                         violation_categories.severity,
-                         violation_categories.points,
+                         violation_categories.severity_level,
+                         violation_categories.point_deduction,
                          violation_categories.description as category_description,
                          users.full_name as reported_by_name,
                          handled.full_name as handled_by_name')
@@ -580,8 +589,8 @@ class ViolationController extends BaseController
             return $this->db->table('violations')
                 ->select('violations.*, 
                          violation_categories.category_name,
-                         violation_categories.severity,
-                         violation_categories.points')
+                         violation_categories.severity_level,
+                         violation_categories.point_deduction')
                 ->join('violation_categories', 'violation_categories.id = violations.category_id')
                 ->where('violations.student_id', $studentId)
                 ->where('violations.deleted_at', null)

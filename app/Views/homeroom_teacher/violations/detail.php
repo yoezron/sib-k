@@ -360,7 +360,7 @@
                                                     <div class="text-muted font-size-11">
                                                         <?= date('d/m/Y', strtotime($history['violation_date'])) ?>
                                                         <span class="ms-2 badge bg-danger badge-sm">
-                                                            <?= $history['points'] ?> poin
+                                                            <?= $history['point_deduction'] ?> poin
                                                         </span>
                                                     </div>
                                                 </div>

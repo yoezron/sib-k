@@ -128,11 +128,11 @@ $this->section('content');
                             <!-- Severity Filter -->
                             <div class="col-md-3 mb-3">
                                 <label class="form-label">Tingkat Keparahan</label>
-                                <select name="severity" class="form-select">
+                                <select name="severity_level" class="form-select">
                                     <option value="">Semua</option>
-                                    <option value="Ringan" <?= ($filters['severity'] == 'Ringan') ? 'selected' : '' ?>>Ringan</option>
-                                    <option value="Sedang" <?= ($filters['severity'] == 'Sedang') ? 'selected' : '' ?>>Sedang</option>
-                                    <option value="Berat" <?= ($filters['severity'] == 'Berat') ? 'selected' : '' ?>>Berat</option>
+                                    <option value="Ringan" <?= ($filters['severity_level'] == 'Ringan') ? 'selected' : '' ?>>Ringan</option>
+                                    <option value="Sedang" <?= ($filters['severity_level'] == 'Sedang') ? 'selected' : '' ?>>Sedang</option>
+                                    <option value="Berat" <?= ($filters['severity_level'] == 'Berat') ? 'selected' : '' ?>>Berat</option>
                                 </select>
                             </div>
 
@@ -261,13 +261,13 @@ $this->section('content');
                                             <?php endif; ?>
                                         </td>
                                         <td>
-                                            <span class="badge badge-soft-<?= $violation['severity'] === 'Berat' ? 'danger' : ($violation['severity'] === 'Sedang' ? 'warning' : 'info') ?>">
-                                                <?= esc($violation['severity']) ?>
+                                            <span class="badge badge-soft-<?= $violation['severity_level'] === 'Berat' ? 'danger' : ($violation['severity_level'] === 'Sedang' ? 'warning' : 'info') ?>">
+                                                <?= esc($violation['severity_level']) ?>
                                             </span>
                                         </td>
                                         <td>
-                                            <span class="point-indicator <?= $violation['points'] >= 50 ? 'high' : ($violation['points'] >= 25 ? 'medium' : 'low') ?>">
-                                                <?= $violation['points'] ?>
+                                            <span class="point-indicator <?= $violation['point_deduction'] >= 50 ? 'high' : ($violation['point_deduction'] >= 25 ? 'medium' : 'low') ?>">
+                                                <?= $violation['point_deduction'] ?>
                                             </span>
                                         </td>
                                         <td>
@@ -365,7 +365,7 @@ $this->section('content');
         });
 
         // Auto-show filter if any filter is active
-        <?php if (!empty($filters['student_id']) || !empty($filters['category_id']) || !empty($filters['severity']) || !empty($filters['status']) || !empty($filters['start_date']) || !empty($filters['end_date']) || !empty($filters['search'])): ?>
+        <?php if (!empty($filters['student_id']) || !empty($filters['category_id']) || !empty($filters['severity_level']) || !empty($filters['status']) || !empty($filters['start_date']) || !empty($filters['end_date']) || !empty($filters['search'])): ?>
             $('#filterSection').show();
             $('#toggleFilter i').removeClass('mdi-chevron-down').addClass('mdi-chevron-up');
         <?php endif; ?>

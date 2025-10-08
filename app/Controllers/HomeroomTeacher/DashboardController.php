@@ -229,7 +229,7 @@ class DashboardController extends BaseController
 
             // Average violation points
             $avgPoints = $this->db->table('violations')
-                ->select('AVG(violation_categories.points) as avg_points')
+                ->select('AVG(violation_categories.point_deduction) as avg_points')
                 ->join('students', 'students.id = violations.student_id')
                 ->join('violation_categories', 'violation_categories.id = violations.category_id')
                 ->where('students.class_id', $classId)
@@ -303,8 +303,9 @@ class DashboardController extends BaseController
     {
         try {
             return $this->db->table('violations')
-                ->select('violations.*, students.full_name as student_name, students.nisn, 
-                         violation_categories.category_name, violation_categories.points,
+                ->select('violations.*, students.full_name as student_name, students.nisn,
+                         violation_categories.category_name, violation_categories.severity_level,
+                         violation_categories.point_deduction,
                          users.full_name as reported_by_name')
                 ->join('students', 'students.id = violations.student_id')
                 ->join('violation_categories', 'violation_categories.id = violations.category_id')
@@ -372,7 +373,7 @@ class DashboardController extends BaseController
             return $this->db->table('students')
                 ->select('students.id, students.full_name, students.nisn, 
                          COUNT(violations.id) as violation_count,
-                         SUM(violation_categories.points) as total_points')
+                        SUM(violation_categories.point_deduction) as total_points')
                 ->join('violations', 'violations.student_id = students.id AND violations.deleted_at IS NULL', 'left')
                 ->join('violation_categories', 'violation_categories.id = violations.category_id', 'left')
                 ->where('students.class_id', $classId)
@@ -428,9 +429,9 @@ class DashboardController extends BaseController
     {
         try {
             return $this->db->table('violation_categories')
-                ->select('violation_categories.category_name, 
+                ->select('violation_categories.category_name,
                          COUNT(violations.id) as count,
-                         violation_categories.severity')
+                         violation_categories.severity_level')
                 ->join('violations', 'violations.category_id = violation_categories.id AND violations.deleted_at IS NULL', 'left')
                 ->join('students', 'students.id = violations.student_id', 'left')
                 ->where('students.class_id', $classId)
