@@ -1,8 +1,23 @@
-<?= $this->extend('layouts/main') ?>
+<?php
 
-<?= $this->section('content') ?>
+/**
+ * File Path: app/Views/homeroom_teacher/dashboard.php
+ * 
+ * Homeroom Teacher Dashboard View
+ * Dashboard utama untuk Wali Kelas
+ * 
+ * @package    SIB-K
+ * @subpackage Views/HomeroomTeacher
+ * @category   View
+ * @author     Development Team
+ * @created    2025-01-07
+ */
 
-<!-- start page title -->
+$this->extend('layouts/main');
+$this->section('content');
+?>
+
+<!-- Start page title -->
 <div class="row">
     <div class="col-12">
         <div class="page-title-box d-sm-flex align-items-center justify-content-between">
@@ -10,11 +25,11 @@
 
             <div class="page-title-right">
                 <ol class="breadcrumb m-0">
-                    <?php foreach ($breadcrumbs as $crumb): ?>
-                        <?php if (isset($crumb['active']) && $crumb['active']): ?>
-                            <li class="breadcrumb-item active"><?= esc($crumb['title']) ?></li>
+                    <?php foreach ($breadcrumbs as $breadcrumb): ?>
+                        <?php if (isset($breadcrumb['active']) && $breadcrumb['active']): ?>
+                            <li class="breadcrumb-item active"><?= esc($breadcrumb['title']) ?></li>
                         <?php else: ?>
-                            <li class="breadcrumb-item"><a href="<?= esc($crumb['url']) ?>"><?= esc($crumb['title']) ?></a></li>
+                            <li class="breadcrumb-item"><a href="<?= esc($breadcrumb['url']) ?>"><?= esc($breadcrumb['title']) ?></a></li>
                         <?php endif; ?>
                     <?php endforeach; ?>
                 </ol>
@@ -22,395 +37,460 @@
         </div>
     </div>
 </div>
-<!-- end page title -->
+<!-- End page title -->
 
-<!-- Class Info Card -->
-<div class="row">
-    <div class="col-12">
-        <div class="card bg-primary">
-            <div class="card-body">
-                <div class="d-flex align-items-center">
-                    <div class="avatar-md flex-shrink-0 me-4">
-                        <span class="avatar-title bg-white bg-soft rounded-circle font-size-24">
-                            <i class="bx bxs-graduation text-primary"></i>
-                        </span>
+<?php if (!$hasClass): ?>
+    <!-- No Class Assigned -->
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i class="mdi mdi-alert-circle-outline text-warning" style="font-size: 64px;"></i>
+                    <h4 class="mt-3">Belum Ada Kelas yang Ditugaskan</h4>
+                    <p class="text-muted"><?= esc($message) ?></p>
+                    <a href="<?= base_url('/') ?>" class="btn btn-primary mt-3">
+                        <i class="mdi mdi-home me-1"></i> Kembali ke Beranda
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+<?php else: ?>
+
+    <!-- Welcome Card -->
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card welcome-card">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h4 class="text-white mb-2">Selamat Datang, <?= esc($currentUser['full_name']) ?>!</h4>
+                            <p class="text-white-50 mb-0">
+                                Anda adalah Wali Kelas <strong><?= esc($class['class_name']) ?></strong> -
+                                Tahun Ajaran <?= esc($class['year_name']) ?> Semester <?= esc($class['semester']) ?>
+                            </p>
+                        </div>
+                        <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                            <a href="<?= base_url('homeroom/violations/create') ?>" class="btn btn-light">
+                                <i class="mdi mdi-plus-circle me-1"></i> Laporkan Pelanggaran
+                            </a>
+                        </div>
                     </div>
-                    <div class="flex-grow-1 text-white">
-                        <h4 class="text-white mb-2"><?= esc($homeroom_class['class_name']) ?></h4>
-                        <p class="mb-0">
-                            <i class="bx bx-calendar me-1"></i>
-                            <?= esc($homeroom_class['year_name']) ?> - Semester <?= esc($homeroom_class['semester']) ?>
-                        </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row">
+        <!-- Total Students -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card mini-stats-wid">
+                <div class="card-body">
+                    <div class="d-flex">
+                        <div class="flex-grow-1">
+                            <p class="text-muted fw-medium mb-2">Total Siswa</p>
+                            <h4 class="mb-0 counter"><?= number_format($stats['total_students']) ?></h4>
+                        </div>
+                        <div class="mini-stat-icon avatar-sm rounded-circle bg-soft-primary align-self-center">
+                            <span class="avatar-title">
+                                <i class="mdi mdi-account-group font-size-24 text-primary"></i>
+                            </span>
+                        </div>
                     </div>
-                    <div>
-                        <a href="<?= route_to('homeroom.violations.create') ?>" class="btn btn-light">
-                            <i class="bx bx-plus-circle me-1"></i> Catat Pelanggaran
+                    <div class="mt-3">
+                        <small class="text-muted">
+                            <i class="mdi mdi-gender-male text-info"></i> <?= $stats['gender_distribution']['male'] ?? 0 ?> Laki-laki
+                            <span class="mx-2">|</span>
+                            <i class="mdi mdi-gender-female text-danger"></i> <?= $stats['gender_distribution']['female'] ?? 0 ?> Perempuan
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Violations This Month -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card mini-stats-wid">
+                <div class="card-body">
+                    <div class="d-flex">
+                        <div class="flex-grow-1">
+                            <p class="text-muted fw-medium mb-2">Pelanggaran Bulan Ini</p>
+                            <h4 class="mb-0 counter"><?= number_format($stats['violations_this_month']) ?></h4>
+                        </div>
+                        <div class="mini-stat-icon avatar-sm rounded-circle bg-soft-danger align-self-center">
+                            <span class="avatar-title">
+                                <i class="mdi mdi-alert-circle-outline font-size-24 text-danger"></i>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <?php if ($stats['violation_trend'] === 'up'): ?>
+                            <small class="text-danger">
+                                <i class="mdi mdi-arrow-up"></i> <?= abs($stats['violation_change_percentage']) ?>% dari bulan lalu
+                            </small>
+                        <?php elseif ($stats['violation_trend'] === 'down'): ?>
+                            <small class="text-success">
+                                <i class="mdi mdi-arrow-down"></i> <?= abs($stats['violation_change_percentage']) ?>% dari bulan lalu
+                            </small>
+                        <?php else: ?>
+                            <small class="text-muted">
+                                <i class="mdi mdi-minus"></i> Tidak ada perubahan
+                            </small>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Violations This Week -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card mini-stats-wid">
+                <div class="card-body">
+                    <div class="d-flex">
+                        <div class="flex-grow-1">
+                            <p class="text-muted fw-medium mb-2">Pelanggaran Minggu Ini</p>
+                            <h4 class="mb-0 counter"><?= number_format($stats['violations_this_week']) ?></h4>
+                        </div>
+                        <div class="mini-stat-icon avatar-sm rounded-circle bg-soft-warning align-self-center">
+                            <span class="avatar-title">
+                                <i class="mdi mdi-alert font-size-24 text-warning"></i>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <small class="text-muted">
+                            <?= $stats['students_with_violations'] ?> siswa terlibat
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Students in Counseling -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card mini-stats-wid">
+                <div class="card-body">
+                    <div class="d-flex">
+                        <div class="flex-grow-1">
+                            <p class="text-muted fw-medium mb-2">Dalam Konseling</p>
+                            <h4 class="mb-0 counter"><?= number_format($stats['students_in_counseling']) ?></h4>
+                        </div>
+                        <div class="mini-stat-icon avatar-sm rounded-circle bg-soft-success align-self-center">
+                            <span class="avatar-title">
+                                <i class="mdi mdi-account-voice font-size-24 text-success"></i>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <small class="text-muted">
+                            Siswa bulan ini
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts and Tables Row -->
+    <div class="row">
+        <!-- Violation Trends Chart -->
+        <div class="col-xl-8">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title mb-4">
+                        <i class="mdi mdi-chart-line text-primary me-2"></i>Tren Pelanggaran (6 Bulan Terakhir)
+                    </h5>
+                    <div class="chart-container" style="height: 300px;">
+                        <canvas id="violationTrendChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Violation by Category -->
+        <div class="col-xl-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title mb-4">
+                        <i class="mdi mdi-chart-donut text-info me-2"></i>Pelanggaran per Kategori
+                    </h5>
+                    <div class="chart-container" style="height: 300px;">
+                        <?php if (!empty($violationByCategory)): ?>
+                            <canvas id="categoryChart"></canvas>
+                        <?php else: ?>
+                            <div class="text-center py-5">
+                                <i class="mdi mdi-information-outline font-size-24 text-muted"></i>
+                                <p class="text-muted mt-2">Belum ada data pelanggaran</p>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Violations and Top Violators Row -->
+    <div class="row">
+        <!-- Recent Violations -->
+        <div class="col-xl-8">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <h5 class="card-title mb-0">
+                            <i class="mdi mdi-clipboard-alert text-danger me-2"></i>Pelanggaran Terbaru (7 Hari)
+                        </h5>
+                        <a href="<?= base_url('homeroom/violations') ?>" class="btn btn-sm btn-soft-primary">
+                            Lihat Semua <i class="mdi mdi-arrow-right ms-1"></i>
+                        </a>
+                    </div>
+
+                    <?php if (!empty($recentViolations)): ?>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Tanggal</th>
+                                        <th>Siswa</th>
+                                        <th>Kategori</th>
+                                        <th>Poin</th>
+                                        <th>Status</th>
+                                        <th>Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach (array_slice($recentViolations, 0, 5) as $violation): ?>
+                                        <tr>
+                                            <td>
+                                                <small><?= format_indo_short($violation['violation_date']) ?></small>
+                                            </td>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="avatar-xs me-2">
+                                                        <span class="avatar-title rounded-circle bg-soft-primary text-primary">
+                                                            <?= strtoupper(substr($violation['student_name'], 0, 1)) ?>
+                                                        </span>
+                                                    </div>
+                                                    <div>
+                                                        <h6 class="mb-0 font-size-14"><?= esc($violation['student_name']) ?></h6>
+                                                        <small class="text-muted"><?= esc($violation['nisn']) ?></small>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="badge badge-soft-<?= $violation['severity'] === 'Berat' ? 'danger' : ($violation['severity'] === 'Sedang' ? 'warning' : 'info') ?>">
+                                                    <?= esc($violation['category_name']) ?>
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span class="point-indicator <?= $violation['points'] >= 50 ? 'high' : ($violation['points'] >= 25 ? 'medium' : 'low') ?>">
+                                                    <?= $violation['points'] ?>
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span class="badge status-<?= strtolower($violation['status']) ?>">
+                                                    <?= esc($violation['status']) ?>
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <a href="<?= base_url('homeroom/violations/detail/' . $violation['id']) ?>"
+                                                    class="btn btn-sm btn-soft-info"
+                                                    data-bs-toggle="tooltip"
+                                                    title="Lihat Detail">
+                                                    <i class="mdi mdi-eye"></i>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    <?php else: ?>
+                        <div class="text-center py-4">
+                            <i class="mdi mdi-emoticon-happy-outline text-success font-size-48"></i>
+                            <p class="text-muted mt-2">Tidak ada pelanggaran dalam 7 hari terakhir</p>
+                        </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Violators & Quick Actions -->
+        <div class="col-xl-4">
+            <!-- Top Violators -->
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">
+                        <i class="mdi mdi-account-alert text-warning me-2"></i>Siswa dengan Poin Tertinggi
+                    </h5>
+
+                    <?php if (!empty($topViolators)): ?>
+                        <div class="list-group list-group-flush">
+                            <?php foreach ($topViolators as $index => $student): ?>
+                                <div class="list-group-item px-0">
+                                    <div class="d-flex align-items-center">
+                                        <div class="flex-shrink-0 me-3">
+                                            <div class="avatar-sm">
+                                                <span class="avatar-title rounded-circle bg-soft-<?= $index === 0 ? 'danger' : 'warning' ?> text-<?= $index === 0 ? 'danger' : 'warning' ?> font-size-16 fw-bold">
+                                                    #<?= $index + 1 ?>
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <h6 class="mb-1 font-size-14"><?= esc($student['full_name']) ?></h6>
+                                            <small class="text-muted"><?= esc($student['nisn']) ?></small>
+                                        </div>
+                                        <div class="flex-shrink-0 text-end">
+                                            <h6 class="mb-0 text-<?= $student['total_points'] >= 75 ? 'danger' : 'warning' ?>">
+                                                <?= $student['total_points'] ?> poin
+                                            </h6>
+                                            <small class="text-muted"><?= $student['violation_count'] ?> pelanggaran</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php else: ?>
+                        <div class="text-center py-3">
+                            <i class="mdi mdi-emoticon-happy text-success font-size-36"></i>
+                            <p class="text-muted mt-2 mb-0">Tidak ada data</p>
+                        </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">
+                        <i class="mdi mdi-flash text-primary me-2"></i>Aksi Cepat
+                    </h5>
+                    <div class="d-grid gap-2">
+                        <a href="<?= base_url('homeroom/violations/create') ?>" class="btn btn-danger">
+                            <i class="mdi mdi-alert-circle-outline me-1"></i> Laporkan Pelanggaran
+                        </a>
+                        <a href="<?= base_url('homeroom/violations') ?>" class="btn btn-info">
+                            <i class="mdi mdi-format-list-bulleted me-1"></i> Lihat Semua Pelanggaran
+                        </a>
+                        <a href="<?= base_url('homeroom/reports') ?>" class="btn btn-success">
+                            <i class="mdi mdi-file-chart me-1"></i> Lihat Laporan Kelas
                         </a>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
 
-<!-- Statistics Cards -->
-<div class="row">
-    <div class="col-xl-3 col-md-6">
-        <div class="card mini-stats-wid">
-            <div class="card-body">
-                <div class="d-flex">
-                    <div class="flex-grow-1">
-                        <p class="text-muted fw-medium mb-2">Total Siswa</p>
-                        <h4 class="mb-0"><?= $statistics['total_students'] ?></h4>
-                    </div>
-                    <div class="flex-shrink-0 align-self-center">
-                        <div class="avatar-sm rounded-circle bg-primary mini-stat-icon">
-                            <span class="avatar-title rounded-circle bg-primary">
-                                <i class="bx bx-user font-size-24"></i>
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+<?php endif; ?>
 
-    <div class="col-xl-3 col-md-6">
-        <div class="card mini-stats-wid">
-            <div class="card-body">
-                <div class="d-flex">
-                    <div class="flex-grow-1">
-                        <p class="text-muted fw-medium mb-2">Pelanggaran Bulan Ini</p>
-                        <h4 class="mb-0"><?= $statistics['violations_this_month'] ?></h4>
-                    </div>
-                    <div class="flex-shrink-0 align-self-center">
-                        <div class="avatar-sm rounded-circle bg-danger mini-stat-icon">
-                            <span class="avatar-title rounded-circle bg-danger">
-                                <i class="bx bx-error font-size-24"></i>
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+<?php $this->endSection(); ?>
 
-    <div class="col-xl-3 col-md-6">
-        <div class="card mini-stats-wid">
-            <div class="card-body">
-                <div class="d-flex">
-                    <div class="flex-grow-1">
-                        <p class="text-muted fw-medium mb-2">Konseling Bulan Ini</p>
-                        <h4 class="mb-0"><?= $statistics['counseling_sessions'] ?></h4>
-                    </div>
-                    <div class="flex-shrink-0 align-self-center">
-                        <div class="avatar-sm rounded-circle bg-info mini-stat-icon">
-                            <span class="avatar-title rounded-circle bg-info">
-                                <i class="bx bx-conversation font-size-24"></i>
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-xl-3 col-md-6">
-        <div class="card mini-stats-wid">
-            <div class="card-body">
-                <div class="d-flex">
-                    <div class="flex-grow-1">
-                        <p class="text-muted fw-medium mb-2">Rata-rata Poin</p>
-                        <h4 class="mb-0"><?= $statistics['average_violation_points'] ?></h4>
-                    </div>
-                    <div class="flex-shrink-0 align-self-center">
-                        <div class="avatar-sm rounded-circle bg-warning mini-stat-icon">
-                            <span class="avatar-title rounded-circle bg-warning">
-                                <i class="bx bx-trending-up font-size-24"></i>
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="row">
-    <!-- Recent Violations -->
-    <div class="col-xl-8">
-        <div class="card">
-            <div class="card-header align-items-center d-flex">
-                <h4 class="card-title mb-0 flex-grow-1">Pelanggaran Terbaru</h4>
-                <div class="flex-shrink-0">
-                    <a href="<?= route_to('homeroom.violations.index') ?>" class="btn btn-sm btn-soft-primary">
-                        <i class="bx bx-list-ul align-middle"></i> Lihat Semua
-                    </a>
-                </div>
-            </div>
-
-            <div class="card-body">
-                <?php if (empty($recent_violations)): ?>
-                    <div class="text-center py-4">
-                        <i class="bx bx-check-circle text-success font-size-48"></i>
-                        <p class="text-muted mt-3 mb-0">Tidak ada pelanggaran baru</p>
-                    </div>
-                <?php else: ?>
-                    <div class="table-responsive">
-                        <table class="table table-borderless table-hover table-nowrap align-middle mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th scope="col">Tanggal</th>
-                                    <th scope="col">Siswa</th>
-                                    <th scope="col">Kategori</th>
-                                    <th scope="col">Tingkat</th>
-                                    <th scope="col" class="text-center">Poin</th>
-                                    <th scope="col">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($recent_violations as $v): ?>
-                                    <tr>
-                                        <td>
-                                            <span class="text-nowrap">
-                                                <?= date('d/m/Y', strtotime($v['violation_date'])) ?>
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <div>
-                                                <a href="<?= route_to('homeroom.violations.detail', $v['id']) ?>"
-                                                    class="text-body fw-bold">
-                                                    <?= esc($v['student_name']) ?>
-                                                </a>
-                                                <div class="text-muted font-size-11"><?= esc($v['nisn']) ?></div>
-                                            </div>
-                                        </td>
-                                        <td><?= esc($v['category_name']) ?></td>
-                                        <td>
-                                            <?php
-                                            $badgeClass = match ($v['severity_level']) {
-                                                'Ringan' => 'bg-info',
-                                                'Sedang' => 'bg-warning',
-                                                'Berat' => 'bg-danger',
-                                                default => 'bg-secondary'
-                                            };
-                                            ?>
-                                            <span class="badge <?= $badgeClass ?>">
-                                                <?= esc($v['severity_level']) ?>
-                                            </span>
-                                        </td>
-                                        <td class="text-center">
-                                            <span class="badge bg-danger rounded-pill"><?= $v['points'] ?></span>
-                                        </td>
-                                        <td>
-                                            <?php
-                                            $statusBadge = match ($v['status']) {
-                                                'Dilaporkan' => 'bg-warning',
-                                                'Dalam Proses' => 'bg-info',
-                                                'Selesai' => 'bg-success',
-                                                'Dibatalkan' => 'bg-secondary',
-                                                default => 'bg-secondary'
-                                            };
-                                            ?>
-                                            <span class="badge <?= $statusBadge ?> font-size-11">
-                                                <?= esc($v['status']) ?>
-                                            </span>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                <?php endif; ?>
-            </div>
-        </div>
-    </div>
-
-    <!-- Students Need Attention -->
-    <div class="col-xl-4">
-        <div class="card">
-            <div class="card-header align-items-center d-flex">
-                <h4 class="card-title mb-0 flex-grow-1">Siswa Perlu Perhatian</h4>
-            </div>
-
-            <div class="card-body">
-                <?php if (empty($students_need_attention)): ?>
-                    <div class="text-center py-4">
-                        <i class="bx bx-smile text-success font-size-36"></i>
-                        <p class="text-muted mt-2 mb-0 font-size-13">Semua siswa dalam kondisi baik</p>
-                    </div>
-                <?php else: ?>
-                    <div class="table-responsive" style="max-height: 350px; overflow-y: auto;">
-                        <table class="table table-borderless table-hover mb-0">
-                            <tbody>
-                                <?php foreach ($students_need_attention as $student): ?>
-                                    <tr>
-                                        <td>
-                                            <div class="d-flex align-items-center">
-                                                <div class="avatar-xs me-3 flex-shrink-0">
-                                                    <span class="avatar-title rounded-circle bg-danger bg-soft text-danger font-size-18">
-                                                        <?= strtoupper(substr($student['full_name'], 0, 1)) ?>
-                                                    </span>
-                                                </div>
-                                                <div class="flex-grow-1">
-                                                    <h5 class="font-size-13 mb-0"><?= esc($student['full_name']) ?></h5>
-                                                    <p class="text-muted mb-0 font-size-11"><?= esc($student['nisn']) ?></p>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td class="text-end">
-                                            <span class="badge bg-danger rounded-pill"><?= $student['total_points'] ?> Poin</span>
-                                            <div class="text-muted font-size-11"><?= $student['violation_count'] ?> kasus</div>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                <?php endif; ?>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="row">
-    <!-- Top Violations Chart -->
-    <div class="col-xl-6">
-        <div class="card">
-            <div class="card-header align-items-center d-flex">
-                <h4 class="card-title mb-0 flex-grow-1">Kategori Pelanggaran Terbanyak</h4>
-            </div>
-
-            <div class="card-body">
-                <?php if (empty($top_violations)): ?>
-                    <div class="text-center py-4">
-                        <p class="text-muted">Belum ada data pelanggaran</p>
-                    </div>
-                <?php else: ?>
-                    <div class="table-responsive">
-                        <table class="table table-borderless table-hover mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Kategori</th>
-                                    <th>Tingkat</th>
-                                    <th class="text-center">Jumlah</th>
-                                    <th class="text-center">Total Poin</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($top_violations as $tv): ?>
-                                    <tr>
-                                        <td><?= esc($tv['category_name']) ?></td>
-                                        <td>
-                                            <?php
-                                            $badgeClass = match ($tv['severity_level']) {
-                                                'Ringan' => 'bg-info',
-                                                'Sedang' => 'bg-warning',
-                                                'Berat' => 'bg-danger',
-                                                default => 'bg-secondary'
-                                            };
-                                            ?>
-                                            <span class="badge <?= $badgeClass ?> font-size-11">
-                                                <?= esc($tv['severity_level']) ?>
-                                            </span>
-                                        </td>
-                                        <td class="text-center">
-                                            <span class="badge bg-primary"><?= $tv['violation_count'] ?>x</span>
-                                        </td>
-                                        <td class="text-center">
-                                            <span class="badge bg-danger"><?= $tv['total_points'] ?></span>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                <?php endif; ?>
-            </div>
-        </div>
-    </div>
-
-    <!-- Upcoming Sessions -->
-    <div class="col-xl-6">
-        <div class="card">
-            <div class="card-header align-items-center d-flex">
-                <h4 class="card-title mb-0 flex-grow-1">Sesi Konseling Mendatang</h4>
-            </div>
-
-            <div class="card-body">
-                <?php if (empty($upcoming_sessions)): ?>
-                    <div class="text-center py-4">
-                        <i class="bx bx-calendar-x text-muted font-size-36"></i>
-                        <p class="text-muted mt-2 mb-0">Tidak ada sesi terjadwal</p>
-                    </div>
-                <?php else: ?>
-                    <div class="table-responsive">
-                        <table class="table table-borderless table-hover mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Tanggal</th>
-                                    <th>Siswa</th>
-                                    <th>Konselor</th>
-                                    <th>Jenis</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($upcoming_sessions as $session): ?>
-                                    <tr>
-                                        <td>
-                                            <span class="text-nowrap">
-                                                <?= date('d/m/Y', strtotime($session['session_date'])) ?>
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <div>
-                                                <strong><?= esc($session['student_name']) ?></strong>
-                                                <div class="text-muted font-size-11"><?= esc($session['nisn']) ?></div>
-                                            </div>
-                                        </td>
-                                        <td><?= esc($session['counselor_name'] ?? 'N/A') ?></td>
-                                        <td>
-                                            <span class="badge bg-info font-size-11">
-                                                <?= esc($session['session_type']) ?>
-                                            </span>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                <?php endif; ?>
-            </div>
-        </div>
-    </div>
-</div>
-
-<?= $this->endSection() ?>
-
-<?= $this->section('scripts') ?>
+<?php $this->section('scripts'); ?>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Optional: Add chart for violation trend
-        <?php if (!empty($monthly_violation_trend)): ?>
-            const trendData = <?= json_encode($monthly_violation_trend) ?>;
+    $(document).ready(function() {
+        <?php if ($hasClass): ?>
 
-            const labels = trendData.map(item => {
-                const [year, month] = item.month.split('-');
-                const date = new Date(year, month - 1);
-                return date.toLocaleDateString('id-ID', {
-                    month: 'short',
-                    year: 'numeric'
+            // Violation Trend Chart
+            const violationTrendData = <?= json_encode($violationTrends) ?>;
+            const trendLabels = violationTrendData.map(item => item.month);
+            const trendCounts = violationTrendData.map(item => item.count);
+
+            const ctx1 = document.getElementById('violationTrendChart');
+            if (ctx1) {
+                new Chart(ctx1, {
+                    type: 'line',
+                    data: {
+                        labels: trendLabels,
+                        datasets: [{
+                            label: 'Jumlah Pelanggaran',
+                            data: trendCounts,
+                            borderColor: '#f46a6a',
+                            backgroundColor: 'rgba(244, 106, 106, 0.1)',
+                            tension: 0.4,
+                            fill: true,
+                            pointBackgroundColor: '#f46a6a',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2,
+                            pointRadius: 4,
+                            pointHoverRadius: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                mode: 'index',
+                                intersect: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    stepSize: 1
+                                }
+                            }
+                        }
+                    }
                 });
-            });
+            }
 
-            const values = trendData.map(item => item.violation_count);
+            // Category Chart
+            <?php if (!empty($violationByCategory)): ?>
+                const categoryData = <?= json_encode($violationByCategory) ?>;
+                const categoryLabels = categoryData.map(item => item.category_name);
+                const categoryCounts = categoryData.map(item => item.count);
 
-            console.log('Trend data loaded:', {
-                labels,
-                values
-            });
-            // You can implement chart here using Chart.js or ApexCharts
+                const ctx2 = document.getElementById('categoryChart');
+                if (ctx2) {
+                    new Chart(ctx2, {
+                        type: 'doughnut',
+                        data: {
+                            labels: categoryLabels,
+                            datasets: [{
+                                data: categoryCounts,
+                                backgroundColor: [
+                                    'rgba(244, 106, 106, 0.8)',
+                                    'rgba(241, 180, 76, 0.8)',
+                                    'rgba(80, 165, 241, 0.8)',
+                                    'rgba(52, 195, 143, 0.8)',
+                                    'rgba(85, 110, 230, 0.8)'
+                                ],
+                                borderWidth: 2,
+                                borderColor: '#fff'
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    position: 'bottom',
+                                    labels: {
+                                        padding: 10,
+                                        font: {
+                                            size: 11
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            <?php endif; ?>
+
         <?php endif; ?>
+
+        // Initialize tooltips
+        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.map(function(tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
     });
 </script>
-<?= $this->endSection() ?>
+<?php $this->endSection(); ?>

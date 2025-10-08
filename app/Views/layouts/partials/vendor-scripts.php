@@ -61,3 +61,6 @@
 
 <!-- App js -->
 <script src="<?= base_url('assets/js/app.js') ?>"></script>
+
+<!-- Custom JS -->
+<script src="<?= base_url('assets/custom/js/app.js') ?>"></script>

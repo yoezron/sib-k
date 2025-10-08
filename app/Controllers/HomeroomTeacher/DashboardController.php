@@ -3,310 +3,446 @@
 /**
  * File Path: app/Controllers/HomeroomTeacher/DashboardController.php
  * 
- * FINAL VERSION - 100% SESUAI DENGAN DATABASE STRUCTURE
- * 
- * Database Columns Confirmed:
- * - students.full_name ✅ EXISTS
- * - students.total_violation_points ✅ EXISTS (bukan violation_points!)
- * - users.full_name ✅ EXISTS
- * - violation_categories.points ✅ EXISTS
+ * Homeroom Teacher Dashboard Controller
+ * Menampilkan dashboard untuk Wali Kelas dengan statistik kelas yang diampu
  * 
  * @package    SIB-K
- * @version    EXACT-MATCH-1.0
+ * @subpackage Controllers/HomeroomTeacher
+ * @category   Controller
+ * @author     Development Team
+ * @created    2025-01-07
  */
 
 namespace App\Controllers\HomeroomTeacher;
 
 use App\Controllers\BaseController;
-use App\Models\StudentModel;
 use App\Models\ClassModel;
+use App\Models\StudentModel;
 use App\Models\ViolationModel;
 use App\Models\CounselingSessionModel;
-use App\Models\UserModel;
 
 class DashboardController extends BaseController
 {
-    protected $studentModel;
     protected $classModel;
+    protected $studentModel;
     protected $violationModel;
     protected $sessionModel;
-    protected $userModel;
     protected $db;
 
+    /**
+     * Constructor
+     */
     public function __construct()
     {
-        $this->studentModel = new StudentModel();
         $this->classModel = new ClassModel();
+        $this->studentModel = new StudentModel();
         $this->violationModel = new ViolationModel();
         $this->sessionModel = new CounselingSessionModel();
-        $this->userModel = new UserModel();
         $this->db = \Config\Database::connect();
+
+        // Load helpers
+        helper(['permission', 'date', 'response']);
     }
 
+    /**
+     * Display homeroom teacher dashboard
+     * 
+     * @return string|\CodeIgniter\HTTP\RedirectResponse
+     */
     public function index()
     {
+        // Check authentication
         if (!is_logged_in()) {
             return redirect()->to('/login')->with('error', 'Silakan login terlebih dahulu');
         }
 
-        if (!is_wali_kelas()) {
-            return redirect()->to('/')->with('error', 'Akses ditolak. Halaman ini hanya untuk Wali Kelas.');
+        // Check if user is homeroom teacher
+        if (!is_homeroom_teacher()) {
+            return redirect()->to(get_dashboard_url())->with('error', 'Akses ditolak');
         }
 
-        $userId = auth_id();
-        $homeroomClass = $this->getHomeroomClass($userId);
+        $userId = current_user_id();
 
-        if (!$homeroomClass) {
-            return view('homeroom_teacher/no_class', [
+        // Get homeroom teacher's class
+        $class = $this->getHomeroomClass($userId);
+
+        if (!$class) {
+            $data = [
                 'title' => 'Dashboard Wali Kelas',
-                'pageTitle' => 'Tidak Ada Kelas',
-                'message' => 'Anda belum ditugaskan sebagai wali kelas untuk tahun ajaran aktif.',
-            ]);
+                'pageTitle' => 'Dashboard',
+                'breadcrumbs' => [
+                    ['title' => 'Dashboard', 'url' => '#', 'active' => true],
+                ],
+                'hasClass' => false,
+                'message' => 'Anda belum ditugaskan sebagai wali kelas. Silakan hubungi administrator.',
+            ];
+
+            return view('homeroom_teacher/dashboard', $data);
         }
 
-        $classId = $homeroomClass['id'];
+        // Get dashboard statistics
+        $stats = $this->getClassStatistics($class['id']);
 
+        // Get recent violations (last 7 days)
+        $recentViolations = $this->getRecentViolations($class['id'], 7);
+
+        // Get violation trends (last 6 months)
+        $violationTrends = $this->getViolationTrends($class['id'], 6);
+
+        // Get top violators (top 5)
+        $topViolators = $this->getTopViolators($class['id'], 5);
+
+        // Get recent counseling sessions for students in this class
+        $recentSessions = $this->getRecentSessions($class['id'], 5);
+
+        // Get violation by category
+        $violationByCategory = $this->getViolationByCategory($class['id']);
+
+        // Prepare data for view
         $data = [
             'title' => 'Dashboard Wali Kelas',
-            'pageTitle' => 'Dashboard - ' . $homeroomClass['class_name'],
+            'pageTitle' => 'Dashboard',
             'breadcrumbs' => [
                 ['title' => 'Dashboard', 'url' => '#', 'active' => true],
             ],
-            'homeroom_class' => $homeroomClass,
-            'statistics' => $this->getClassStatistics($classId),
-            'recent_violations' => $this->getRecentViolations($classId, 5),
-            'top_violations' => $this->getTopViolations($classId, 5),
-            'upcoming_sessions' => $this->getUpcomingSessions($classId, 5),
-            'students_need_attention' => $this->getStudentsNeedAttention($classId, 5),
-            'monthly_violation_trend' => $this->getMonthlyViolationTrend($classId, 6),
+            'hasClass' => true,
+            'class' => $class,
+            'stats' => $stats,
+            'recentViolations' => $recentViolations,
+            'violationTrends' => $violationTrends,
+            'topViolators' => $topViolators,
+            'recentSessions' => $recentSessions,
+            'violationByCategory' => $violationByCategory,
+            'currentUser' => current_user(),
         ];
 
         return view('homeroom_teacher/dashboard', $data);
     }
 
+    /**
+     * Get statistics via AJAX
+     * 
+     * @return \CodeIgniter\HTTP\ResponseInterface
+     */
     public function getStats()
     {
-        if (!is_logged_in() || !is_wali_kelas()) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Unauthorized access'
-            ]);
+        // Check authentication
+        if (!is_logged_in() || !is_homeroom_teacher()) {
+            return json_unauthorized('Unauthorized access');
         }
 
-        $userId = auth_id();
-        $homeroomClass = $this->getHomeroomClass($userId);
+        $userId = current_user_id();
+        $class = $this->getHomeroomClass($userId);
 
-        if (!$homeroomClass) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Kelas tidak ditemukan'
-            ]);
+        if (!$class) {
+            return json_error('Class not found');
         }
 
-        $statistics = $this->getClassStatistics($homeroomClass['id']);
+        $stats = $this->getClassStatistics($class['id']);
 
-        return $this->response->setJSON([
-            'success' => true,
-            'data' => $statistics
-        ]);
-    }
-
-    private function getHomeroomClass($userId)
-    {
-        return $this->classModel
-            ->select('classes.*, 
-                      academic_years.year_name, 
-                      academic_years.semester,
-                      academic_years.start_date,
-                      academic_years.end_date,
-                      academic_years.is_active as year_active')
-            ->join('academic_years', 'academic_years.id = classes.academic_year_id')
-            ->where('classes.homeroom_teacher_id', $userId)
-            ->where('classes.is_active', 1)
-            ->where('academic_years.is_active', 1)
-            ->first();
+        return json_success($stats, 'Statistics retrieved successfully');
     }
 
     /**
-     * ✅ USING CORRECT COLUMN NAME: total_violation_points
+     * Get homeroom teacher's class
+     * 
+     * @param int $userId
+     * @return array|null
+     */
+    private function getHomeroomClass($userId)
+    {
+        try {
+            $class = $this->db->table('classes')
+                ->select('classes.*, academic_years.year_name, academic_years.semester')
+                ->join('academic_years', 'academic_years.id = classes.academic_year_id')
+                ->where('classes.homeroom_teacher_id', $userId)
+                ->where('classes.deleted_at', null)
+                ->where('academic_years.is_active', 1)
+                ->orderBy('classes.created_at', 'DESC')
+                ->get()
+                ->getRowArray();
+
+            return $class;
+        } catch (\Exception $e) {
+            log_message('error', '[HOMEROOM DASHBOARD] Get class error: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Get class statistics
+     * 
+     * @param int $classId
+     * @return array
      */
     private function getClassStatistics($classId)
     {
-        // Total students
-        $totalStudents = $this->db->table('students')
-            ->where('class_id', $classId)
-            ->where('status', 'Aktif')
-            ->where('deleted_at', null)
-            ->countAllResults();
+        try {
+            $stats = [];
 
-        // Violations this month
-        $thisMonth = date('Y-m-01');
-        $violationsThisMonth = $this->db->table('violations')
-            ->join('students', 'students.id = violations.student_id', 'inner')
-            ->where('students.class_id', $classId)
-            ->where('violations.violation_date >=', $thisMonth)
-            ->where('violations.deleted_at', null)
-            ->countAllResults();
+            // Total students
+            $stats['total_students'] = $this->db->table('students')
+                ->where('class_id', $classId)
+                ->where('deleted_at', null)
+                ->countAllResults();
 
-        // Students with violations
-        $studentsWithViolations = $this->db->table('violations')
-            ->select('COUNT(DISTINCT violations.student_id) as count')
-            ->join('students', 'students.id = violations.student_id', 'inner')
-            ->where('students.class_id', $classId)
-            ->where('violations.deleted_at', null)
-            ->get()
-            ->getRowArray();
+            // Total violations this month
+            $stats['violations_this_month'] = $this->db->table('violations')
+                ->join('students', 'students.id = violations.student_id')
+                ->where('students.class_id', $classId)
+                ->where('MONTH(violations.violation_date)', date('m'))
+                ->where('YEAR(violations.violation_date)', date('Y'))
+                ->where('violations.deleted_at', null)
+                ->countAllResults();
 
-        // Counseling sessions this month
-        $sessionsThisMonth = $this->db->table('counseling_sessions')
-            ->join('students', 'students.id = counseling_sessions.student_id', 'inner')
-            ->where('students.class_id', $classId)
-            ->where('counseling_sessions.session_date >=', $thisMonth)
-            ->where('counseling_sessions.deleted_at', null)
-            ->countAllResults();
+            // Total violations this week
+            $stats['violations_this_week'] = $this->db->table('violations')
+                ->join('students', 'students.id = violations.student_id')
+                ->where('students.class_id', $classId)
+                ->where('violations.violation_date >=', date('Y-m-d', strtotime('-7 days')))
+                ->where('violations.deleted_at', null)
+                ->countAllResults();
 
-        // ✅ FIXED: Use students.total_violation_points (column yang benar!)
-        $totalPoints = $this->db->table('students')
-            ->select('SUM(total_violation_points) as total_points')
-            ->where('class_id', $classId)
-            ->where('status', 'Aktif')
-            ->where('deleted_at', null)
-            ->get()
-            ->getRowArray();
+            // Students with violations this month
+            $stats['students_with_violations'] = $this->db->table('violations')
+                ->select('COUNT(DISTINCT violations.student_id) as count')
+                ->join('students', 'students.id = violations.student_id')
+                ->where('students.class_id', $classId)
+                ->where('MONTH(violations.violation_date)', date('m'))
+                ->where('YEAR(violations.violation_date)', date('Y'))
+                ->where('violations.deleted_at', null)
+                ->get()
+                ->getRow()
+                ->count ?? 0;
 
-        $avgPoints = $totalStudents > 0 ?
-            round(($totalPoints['total_points'] ?? 0) / $totalStudents, 1) : 0;
+            // Students in counseling this month
+            $stats['students_in_counseling'] = $this->db->table('counseling_sessions')
+                ->select('COUNT(DISTINCT counseling_sessions.student_id) as count')
+                ->join('students', 'students.id = counseling_sessions.student_id')
+                ->where('students.class_id', $classId)
+                ->where('MONTH(counseling_sessions.session_date)', date('m'))
+                ->where('YEAR(counseling_sessions.session_date)', date('Y'))
+                ->where('counseling_sessions.deleted_at', null)
+                ->get()
+                ->getRow()
+                ->count ?? 0;
 
-        return [
-            'total_students' => $totalStudents,
-            'violations_this_month' => $violationsThisMonth,
-            'students_with_violations' => $studentsWithViolations['count'] ?? 0,
-            'counseling_sessions' => $sessionsThisMonth,
-            'average_violation_points' => $avgPoints,
-            'violation_free_students' => $totalStudents - ($studentsWithViolations['count'] ?? 0),
-        ];
+            // Average violation points
+            $avgPoints = $this->db->table('violations')
+                ->select('AVG(violation_categories.points) as avg_points')
+                ->join('students', 'students.id = violations.student_id')
+                ->join('violation_categories', 'violation_categories.id = violations.category_id')
+                ->where('students.class_id', $classId)
+                ->where('violations.deleted_at', null)
+                ->get()
+                ->getRow();
+
+            $stats['avg_violation_points'] = $avgPoints ? round($avgPoints->avg_points, 1) : 0;
+
+            // Gender distribution
+            $maleCount = $this->db->table('students')
+                ->where('class_id', $classId)
+                ->where('gender', 'Laki-laki')
+                ->where('deleted_at', null)
+                ->countAllResults();
+
+            $femaleCount = $this->db->table('students')
+                ->where('class_id', $classId)
+                ->where('gender', 'Perempuan')
+                ->where('deleted_at', null)
+                ->countAllResults();
+
+            $stats['gender_distribution'] = [
+                'male' => $maleCount,
+                'female' => $femaleCount,
+            ];
+
+            // Percentage changes (compare with last month)
+            $lastMonthViolations = $this->db->table('violations')
+                ->join('students', 'students.id = violations.student_id')
+                ->where('students.class_id', $classId)
+                ->where('MONTH(violations.violation_date)', date('m', strtotime('-1 month')))
+                ->where('YEAR(violations.violation_date)', date('Y', strtotime('-1 month')))
+                ->where('violations.deleted_at', null)
+                ->countAllResults();
+
+            if ($lastMonthViolations > 0) {
+                $percentageChange = (($stats['violations_this_month'] - $lastMonthViolations) / $lastMonthViolations) * 100;
+                $stats['violation_change_percentage'] = round($percentageChange, 1);
+                $stats['violation_trend'] = $percentageChange > 0 ? 'up' : 'down';
+            } else {
+                $stats['violation_change_percentage'] = 0;
+                $stats['violation_trend'] = 'stable';
+            }
+
+            return $stats;
+        } catch (\Exception $e) {
+            log_message('error', '[HOMEROOM DASHBOARD] Get statistics error: ' . $e->getMessage());
+            return [
+                'total_students' => 0,
+                'violations_this_month' => 0,
+                'violations_this_week' => 0,
+                'students_with_violations' => 0,
+                'students_in_counseling' => 0,
+                'avg_violation_points' => 0,
+                'gender_distribution' => ['male' => 0, 'female' => 0],
+                'violation_change_percentage' => 0,
+                'violation_trend' => 'stable',
+            ];
+        }
     }
 
     /**
-     * ✅ USING students.full_name (column exists!)
+     * Get recent violations
+     * 
+     * @param int $classId
+     * @param int $days
+     * @return array
      */
-    private function getRecentViolations($classId, $limit = 5)
+    private function getRecentViolations($classId, $days = 7)
     {
-        $query = "
-            SELECT 
-                v.*,
-                s.full_name as student_name,
-                s.nisn,
-                vc.category_name,
-                vc.points,
-                vc.severity_level,
-                u.full_name as reported_by_name
-            FROM violations v
-            INNER JOIN students s ON s.id = v.student_id
-            INNER JOIN violation_categories vc ON vc.id = v.category_id
-            LEFT JOIN users u ON u.id = v.reported_by
-            WHERE s.class_id = ?
-              AND v.deleted_at IS NULL
-            ORDER BY v.violation_date DESC, v.created_at DESC
-            LIMIT ?
-        ";
-
-        return $this->db->query($query, [$classId, $limit])->getResultArray();
-    }
-
-    private function getTopViolations($classId, $limit = 5)
-    {
-        $query = "
-            SELECT 
-                vc.category_name,
-                vc.severity_level,
-                COUNT(*) as violation_count,
-                SUM(vc.points) as total_points
-            FROM violations v
-            INNER JOIN students s ON s.id = v.student_id
-            INNER JOIN violation_categories vc ON vc.id = v.category_id
-            WHERE s.class_id = ?
-              AND v.deleted_at IS NULL
-            GROUP BY v.category_id
-            ORDER BY violation_count DESC
-            LIMIT ?
-        ";
-
-        return $this->db->query($query, [$classId, $limit])->getResultArray();
+        try {
+            return $this->db->table('violations')
+                ->select('violations.*, students.full_name as student_name, students.nisn, 
+                         violation_categories.category_name, violation_categories.points,
+                         users.full_name as reported_by_name')
+                ->join('students', 'students.id = violations.student_id')
+                ->join('violation_categories', 'violation_categories.id = violations.category_id')
+                ->join('users', 'users.id = violations.reported_by')
+                ->where('students.class_id', $classId)
+                ->where('violations.violation_date >=', date('Y-m-d', strtotime("-{$days} days")))
+                ->where('violations.deleted_at', null)
+                ->orderBy('violations.violation_date', 'DESC')
+                ->orderBy('violations.created_at', 'DESC')
+                ->limit(10)
+                ->get()
+                ->getResultArray();
+        } catch (\Exception $e) {
+            log_message('error', '[HOMEROOM DASHBOARD] Get recent violations error: ' . $e->getMessage());
+            return [];
+        }
     }
 
     /**
-     * ✅ USING students.full_name
+     * Get violation trends (monthly data for charts)
+     * 
+     * @param int $classId
+     * @param int $months
+     * @return array
      */
-    private function getUpcomingSessions($classId, $limit = 5)
+    private function getViolationTrends($classId, $months = 6)
     {
-        $today = date('Y-m-d');
+        try {
+            $trends = [];
 
-        $query = "
-            SELECT 
-                cs.*,
-                s.full_name as student_name,
-                s.nisn,
-                u.full_name as counselor_name
-            FROM counseling_sessions cs
-            INNER JOIN students s ON s.id = cs.student_id
-            LEFT JOIN users u ON u.id = cs.counselor_id
-            WHERE s.class_id = ?
-              AND cs.session_date >= ?
-              AND cs.status = 'Terjadwal'
-              AND cs.deleted_at IS NULL
-            ORDER BY cs.session_date ASC
-            LIMIT ?
-        ";
+            for ($i = $months - 1; $i >= 0; $i--) {
+                $month = date('Y-m', strtotime("-{$i} months"));
+                $monthName = date('M Y', strtotime("-{$i} months"));
 
-        return $this->db->query($query, [$classId, $today, $limit])->getResultArray();
+                $count = $this->db->table('violations')
+                    ->join('students', 'students.id = violations.student_id')
+                    ->where('students.class_id', $classId)
+                    ->where("DATE_FORMAT(violations.violation_date, '%Y-%m')", $month)
+                    ->where('violations.deleted_at', null)
+                    ->countAllResults();
+
+                $trends[] = [
+                    'month' => $monthName,
+                    'count' => $count,
+                ];
+            }
+
+            return $trends;
+        } catch (\Exception $e) {
+            log_message('error', '[HOMEROOM DASHBOARD] Get violation trends error: ' . $e->getMessage());
+            return [];
+        }
     }
 
     /**
-     * ✅ USING students.total_violation_points
+     * Get top violators
+     * 
+     * @param int $classId
+     * @param int $limit
+     * @return array
      */
-    private function getStudentsNeedAttention($classId, $limit = 5)
+    private function getTopViolators($classId, $limit = 5)
     {
-        $query = "
-            SELECT 
-                s.id,
-                s.nisn,
-                s.full_name,
-                s.gender,
-                s.status,
-                s.total_violation_points as violation_points,
-                COUNT(v.id) as violation_count
-            FROM students s
-            LEFT JOIN violations v ON v.student_id = s.id AND v.deleted_at IS NULL
-            WHERE s.class_id = ?
-              AND s.status = 'Aktif'
-              AND s.deleted_at IS NULL
-            GROUP BY s.id
-            HAVING s.total_violation_points > 0
-            ORDER BY s.total_violation_points DESC
-            LIMIT ?
-        ";
-
-        return $this->db->query($query, [$classId, $limit])->getResultArray();
+        try {
+            return $this->db->table('students')
+                ->select('students.id, students.full_name, students.nisn, 
+                         COUNT(violations.id) as violation_count,
+                         SUM(violation_categories.points) as total_points')
+                ->join('violations', 'violations.student_id = students.id AND violations.deleted_at IS NULL', 'left')
+                ->join('violation_categories', 'violation_categories.id = violations.category_id', 'left')
+                ->where('students.class_id', $classId)
+                ->where('students.deleted_at', null)
+                ->groupBy('students.id')
+                ->having('violation_count >', 0)
+                ->orderBy('total_points', 'DESC')
+                ->orderBy('violation_count', 'DESC')
+                ->limit($limit)
+                ->get()
+                ->getResultArray();
+        } catch (\Exception $e) {
+            log_message('error', '[HOMEROOM DASHBOARD] Get top violators error: ' . $e->getMessage());
+            return [];
+        }
     }
 
-    private function getMonthlyViolationTrend($classId, $months = 6)
+    /**
+     * Get recent counseling sessions
+     * 
+     * @param int $classId
+     * @param int $limit
+     * @return array
+     */
+    private function getRecentSessions($classId, $limit = 5)
     {
-        $dateFrom = date('Y-m-01', strtotime("-{$months} months"));
+        try {
+            return $this->db->table('counseling_sessions')
+                ->select('counseling_sessions.*, students.full_name as student_name, students.nisn,
+                         users.full_name as counselor_name')
+                ->join('students', 'students.id = counseling_sessions.student_id')
+                ->join('users', 'users.id = counseling_sessions.counselor_id')
+                ->where('students.class_id', $classId)
+                ->where('counseling_sessions.deleted_at', null)
+                ->orderBy('counseling_sessions.session_date', 'DESC')
+                ->orderBy('counseling_sessions.created_at', 'DESC')
+                ->limit($limit)
+                ->get()
+                ->getResultArray();
+        } catch (\Exception $e) {
+            log_message('error', '[HOMEROOM DASHBOARD] Get recent sessions error: ' . $e->getMessage());
+            return [];
+        }
+    }
 
-        $query = "
-            SELECT 
-                DATE_FORMAT(v.violation_date, '%Y-%m') as month,
-                COUNT(*) as violation_count
-            FROM violations v
-            INNER JOIN students s ON s.id = v.student_id
-            WHERE s.class_id = ?
-              AND v.violation_date >= ?
-              AND v.deleted_at IS NULL
-            GROUP BY month
-            ORDER BY month ASC
-        ";
-
-        return $this->db->query($query, [$classId, $dateFrom])->getResultArray();
+    /**
+     * Get violations grouped by category
+     * 
+     * @param int $classId
+     * @return array
+     */
+    private function getViolationByCategory($classId)
+    {
+        try {
+            return $this->db->table('violation_categories')
+                ->select('violation_categories.category_name, 
+                         COUNT(violations.id) as count,
+                         violation_categories.severity')
+                ->join('violations', 'violations.category_id = violation_categories.id AND violations.deleted_at IS NULL', 'left')
+                ->join('students', 'students.id = violations.student_id', 'left')
+                ->where('students.class_id', $classId)
+                ->where('violation_categories.deleted_at', null)
+                ->groupBy('violation_categories.id')
+                ->orderBy('count', 'DESC')
+                ->limit(5)
+                ->get()
+                ->getResultArray();
+        } catch (\Exception $e) {
+            log_message('error', '[HOMEROOM DASHBOARD] Get violation by category error: ' . $e->getMessage());
+            return [];
+        }
     }
 }

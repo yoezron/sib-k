@@ -3,18 +3,14 @@
 /**
  * File Path: app/Controllers/HomeroomTeacher/ClassReportController.php
  * 
- * Class Report Controller - OPTIMIZED VERSION
- * 
- * CHANGES:
- * ✅ OPTIMIZED: Simplified queries (students.full_name sudah ada)
- * ✅ FIXED: Consistent use of total_violation_points
- * ✅ IMPROVED: Better performance with reduced joins
- * ✅ VERIFIED: All columns match database structure
+ * Homeroom Teacher Class Report Controller
+ * Mengelola laporan kelas untuk wali kelas
  * 
  * @package    SIB-K
- * @subpackage Controllers\HomeroomTeacher
- * @version    2.0.0 - OPTIMIZED
- * @updated    2025-01-07
+ * @subpackage Controllers/HomeroomTeacher
+ * @category   Controller
+ * @author     Development Team
+ * @created    2025-01-07
  */
 
 namespace App\Controllers\HomeroomTeacher;
@@ -24,8 +20,6 @@ use App\Models\ClassModel;
 use App\Models\StudentModel;
 use App\Models\ViolationModel;
 use App\Models\CounselingSessionModel;
-use Dompdf\Dompdf;
-use Dompdf\Options;
 
 class ClassReportController extends BaseController
 {
@@ -35,6 +29,9 @@ class ClassReportController extends BaseController
     protected $sessionModel;
     protected $db;
 
+    /**
+     * Constructor
+     */
     public function __construct()
     {
         $this->classModel = new ClassModel();
@@ -42,504 +39,705 @@ class ClassReportController extends BaseController
         $this->violationModel = new ViolationModel();
         $this->sessionModel = new CounselingSessionModel();
         $this->db = \Config\Database::connect();
+
+        // Load helpers
+        helper(['permission', 'date', 'response']);
     }
 
     /**
-     * Display class report summary
+     * Display class report index
+     * 
+     * @return string|\CodeIgniter\HTTP\RedirectResponse
      */
     public function index()
     {
+        // Check authentication
         if (!is_logged_in()) {
             return redirect()->to('/login')->with('error', 'Silakan login terlebih dahulu');
         }
 
-        if (!is_wali_kelas()) {
-            return redirect()->to('/')->with('error', 'Akses ditolak');
+        // Check if user is homeroom teacher
+        if (!is_homeroom_teacher()) {
+            return redirect()->to(get_dashboard_url())->with('error', 'Akses ditolak');
         }
 
-        $userId = auth_id();
-        $homeroomClass = $this->getHomeroomClass($userId);
+        $userId = current_user_id();
 
-        if (!$homeroomClass) {
-            return view('homeroom_teacher/no_class', [
-                'title' => 'Laporan Kelas',
-                'pageTitle' => 'Tidak Ada Kelas',
-                'message' => 'Anda belum ditugaskan sebagai wali kelas untuk tahun ajaran aktif.',
-            ]);
+        // Get homeroom teacher's class
+        $class = $this->getHomeroomClass($userId);
+
+        if (!$class) {
+            return redirect()->to('/homeroom/dashboard')
+                ->with('error', 'Anda belum ditugaskan sebagai wali kelas.');
         }
 
-        // Get comprehensive class report
-        $reportData = $this->getClassReport($homeroomClass['id']);
+        // Get filter parameters
+        $startDate = $this->request->getGet('start_date') ?: date('Y-m-01'); // First day of current month
+        $endDate = $this->request->getGet('end_date') ?: date('Y-m-t'); // Last day of current month
 
+        // Get report data
+        $reportData = $this->generateClassReport($class['id'], $startDate, $endDate);
+
+        // Prepare data for view
         $data = [
             'title' => 'Laporan Kelas',
-            'pageTitle' => 'Laporan Kelas - ' . $homeroomClass['class_name'],
+            'pageTitle' => 'Laporan Kelas',
             'breadcrumbs' => [
-                ['title' => 'Dashboard', 'url' => route_to('homeroom.dashboard')],
-                ['title' => 'Laporan', 'url' => '#', 'active' => true],
+                ['title' => 'Dashboard', 'url' => base_url('homeroom/dashboard')],
+                ['title' => 'Laporan Kelas', 'url' => '#', 'active' => true],
             ],
-            'homeroom_class' => $homeroomClass,
-            'report' => $reportData,
+            'class' => $class,
+            'reportData' => $reportData,
+            'startDate' => $startDate,
+            'endDate' => $endDate,
+            'currentUser' => current_user(),
         ];
 
-        return view('homeroom_teacher/reports/class_summary', $data);
+        return view('homeroom_teacher/reports/index', $data);
     }
 
     /**
-     * Get report data (AJAX)
+     * Get report data via AJAX
+     * 
+     * @return \CodeIgniter\HTTP\ResponseInterface
      */
     public function getReportData()
     {
-        if (!is_logged_in() || !is_wali_kelas()) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Unauthorized access'
-            ]);
+        // Check authentication
+        if (!is_logged_in() || !is_homeroom_teacher()) {
+            return json_unauthorized('Unauthorized access');
         }
 
-        $userId = auth_id();
-        $homeroomClass = $this->getHomeroomClass($userId);
+        $userId = current_user_id();
+        $class = $this->getHomeroomClass($userId);
 
-        if (!$homeroomClass) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Kelas tidak ditemukan'
-            ]);
+        if (!$class) {
+            return json_error('Class not found');
         }
 
-        $reportData = $this->getClassReport($homeroomClass['id']);
+        // Get parameters
+        $startDate = $this->request->getGet('start_date') ?: date('Y-m-01');
+        $endDate = $this->request->getGet('end_date') ?: date('Y-m-t');
 
-        return $this->response->setJSON([
-            'success' => true,
-            'data' => $reportData
-        ]);
+        // Generate report
+        $reportData = $this->generateClassReport($class['id'], $startDate, $endDate);
+
+        return json_success($reportData, 'Report data retrieved successfully');
     }
 
     /**
      * Export report to PDF
+     * 
+     * @return \CodeIgniter\HTTP\ResponseInterface|void
      */
     public function exportPDF()
     {
-        if (!is_logged_in() || !is_wali_kelas()) {
-            return redirect()->to('/login')->with('error', 'Akses ditolak');
+        // Check authentication
+        if (!is_logged_in() || !is_homeroom_teacher()) {
+            return redirect()->to('/login')->with('error', 'Silakan login terlebih dahulu');
         }
 
-        $userId = auth_id();
-        $homeroomClass = $this->getHomeroomClass($userId);
+        $userId = current_user_id();
+        $class = $this->getHomeroomClass($userId);
 
-        if (!$homeroomClass) {
-            return redirect()->to(route_to('homeroom.dashboard'))
-                ->with('error', 'Kelas tidak ditemukan');
+        if (!$class) {
+            return redirect()->to('/homeroom/reports')
+                ->with('error', 'Kelas tidak ditemukan.');
         }
 
-        $reportData = $this->getClassReport($homeroomClass['id']);
+        // Get parameters
+        $startDate = $this->request->getGet('start_date') ?: date('Y-m-01');
+        $endDate = $this->request->getGet('end_date') ?: date('Y-m-t');
 
-        // Prepare data for PDF view
+        // Generate report data
+        $reportData = $this->generateClassReport($class['id'], $startDate, $endDate);
+
+        // Prepare data for PDF
         $data = [
-            'homeroom_class' => $homeroomClass,
-            'report' => $reportData,
-            'generated_date' => date('d F Y'),
-            'generated_by' => auth_name(),
+            'class' => $class,
+            'reportData' => $reportData,
+            'startDate' => $startDate,
+            'endDate' => $endDate,
+            'generatedAt' => date('Y-m-d H:i:s'),
+            'generatedBy' => current_user_name(),
         ];
 
-        // Generate PDF
-        $options = new Options();
-        $options->set('isRemoteEnabled', true);
-        $options->set('defaultFont', 'DejaVu Sans');
+        // TODO: Implement PDF generation with Dompdf (FASE 7)
+        // For now, return message
+        return redirect()->back()
+            ->with('info', 'Fitur export PDF akan tersedia di fase berikutnya.');
 
-        $dompdf = new Dompdf($options);
+        /*
+        // Implementation untuk FASE 7:
+        
+        // Load Dompdf
+        $dompdf = new \Dompdf\Dompdf();
+        
+        // Render view to HTML
         $html = view('homeroom_teacher/reports/pdf_template', $data);
-
+        
+        // Load HTML to Dompdf
         $dompdf->loadHtml($html);
+        
+        // Set paper size
         $dompdf->setPaper('A4', 'portrait');
+        
+        // Render PDF
         $dompdf->render();
-
-        $filename = 'Laporan_Kelas_' . $homeroomClass['class_name'] . '_' . date('Y-m-d') . '.pdf';
-        $dompdf->stream($filename, ['Attachment' => true]);
+        
+        // Generate filename
+        $filename = 'Laporan_Kelas_' . $class['class_name'] . '_' . date('Ymd') . '.pdf';
+        
+        // Stream PDF to browser
+        return $this->response->setHeader('Content-Type', 'application/pdf')
+            ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
+            ->setBody($dompdf->output());
+        */
     }
 
     /**
      * Export report to Excel
+     * 
+     * @return \CodeIgniter\HTTP\ResponseInterface|void
      */
     public function exportExcel()
     {
-        if (!is_logged_in() || !is_wali_kelas()) {
-            return redirect()->to('/login')->with('error', 'Akses ditolak');
+        // Check authentication
+        if (!is_logged_in() || !is_homeroom_teacher()) {
+            return redirect()->to('/login')->with('error', 'Silakan login terlebih dahulu');
         }
 
-        $userId = auth_id();
-        $homeroomClass = $this->getHomeroomClass($userId);
+        $userId = current_user_id();
+        $class = $this->getHomeroomClass($userId);
 
-        if (!$homeroomClass) {
-            return redirect()->to(route_to('homeroom.dashboard'))
-                ->with('error', 'Kelas tidak ditemukan');
+        if (!$class) {
+            return redirect()->to('/homeroom/reports')
+                ->with('error', 'Kelas tidak ditemukan.');
         }
 
-        $reportData = $this->getClassReport($homeroomClass['id']);
+        // Get parameters
+        $startDate = $this->request->getGet('start_date') ?: date('Y-m-01');
+        $endDate = $this->request->getGet('end_date') ?: date('Y-m-t');
 
+        // Generate report data
+        $reportData = $this->generateClassReport($class['id'], $startDate, $endDate);
+
+        // TODO: Implement Excel export with PhpSpreadsheet (FASE 7)
+        // For now, return message
+        return redirect()->back()
+            ->with('info', 'Fitur export Excel akan tersedia di fase berikutnya.');
+
+        /*
+        // Implementation untuk FASE 7:
+        
+        // Load PhpSpreadsheet
         $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
-
-        // Header
+        
+        // Set header
         $sheet->setCellValue('A1', 'LAPORAN KELAS');
-        $sheet->setCellValue('A2', 'Kelas: ' . $homeroomClass['class_name']);
-        $sheet->setCellValue('A3', 'Tahun Ajaran: ' . $homeroomClass['year_name']);
-        $sheet->setCellValue('A4', 'Wali Kelas: ' . auth_name());
-        $sheet->setCellValue('A5', 'Tanggal: ' . date('d/m/Y'));
-
-        // Student data table header
-        $row = 7;
+        $sheet->setCellValue('A2', 'Kelas: ' . $class['class_name']);
+        $sheet->setCellValue('A3', 'Periode: ' . format_indo_date($startDate) . ' - ' . format_indo_date($endDate));
+        
+        // Add summary section
+        $row = 5;
+        $sheet->setCellValue('A' . $row, 'RINGKASAN');
+        $row++;
+        $sheet->setCellValue('A' . $row, 'Total Siswa');
+        $sheet->setCellValue('B' . $row, $reportData['summary']['total_students']);
+        // ... add more summary data
+        
+        // Add student details section
+        $row += 3;
+        $sheet->setCellValue('A' . $row, 'DETAIL SISWA');
+        $row++;
         $sheet->setCellValue('A' . $row, 'No');
         $sheet->setCellValue('B' . $row, 'NISN');
-        $sheet->setCellValue('C' . $row, 'Nama Lengkap');
-        $sheet->setCellValue('D' . $row, 'L/P');
-        $sheet->setCellValue('E' . $row, 'Poin Pelanggaran');
-        $sheet->setCellValue('F' . $row, 'Jumlah Pelanggaran');
-        $sheet->setCellValue('G' . $row, 'Jumlah Konseling');
-        $sheet->setCellValue('H' . $row, 'Status');
-
-        // Student data
-        $row++;
-        $no = 1;
-        foreach ($reportData['students'] as $student) {
-            $sheet->setCellValue('A' . $row, $no++);
-            $sheet->setCellValue('B' . $row, $student['nisn']);
-            $sheet->setCellValue('C' . $row, $student['full_name']);
-            $sheet->setCellValue('D' . $row, $student['gender']);
-            $sheet->setCellValue('E' . $row, $student['violation_points']);
-            $sheet->setCellValue('F' . $row, $student['violation_count']);
-            $sheet->setCellValue('G' . $row, $student['session_count']);
-            $sheet->setCellValue('H' . $row, $student['status']);
-            $row++;
-        }
-
-        // Statistics
-        $row += 2;
-        $sheet->setCellValue('A' . $row, 'STATISTIK KELAS');
-        $row++;
-        $sheet->setCellValue('A' . $row, 'Total Siswa:');
-        $sheet->setCellValue('B' . $row, $reportData['student_stats']['total']);
-        $row++;
-        $sheet->setCellValue('A' . $row, 'Laki-laki:');
-        $sheet->setCellValue('B' . $row, $reportData['gender_distribution']['L']);
-        $row++;
-        $sheet->setCellValue('A' . $row, 'Perempuan:');
-        $sheet->setCellValue('B' . $row, $reportData['gender_distribution']['P']);
-        $row++;
-        $sheet->setCellValue('A' . $row, 'Total Pelanggaran:');
-        $sheet->setCellValue('B' . $row, $reportData['violation_stats']['total']);
-        $row++;
-        $sheet->setCellValue('A' . $row, 'Total Sesi Konseling:');
-        $sheet->setCellValue('B' . $row, $reportData['session_stats']['total']);
-
-        // Auto-size columns
-        foreach (range('A', 'H') as $col) {
-            $sheet->getColumnDimension($col)->setAutoSize(true);
-        }
-
+        $sheet->setCellValue('C' . $row, 'Nama');
+        $sheet->setCellValue('D' . $row, 'Pelanggaran');
+        $sheet->setCellValue('E' . $row, 'Poin');
+        $sheet->setCellValue('F' . $row, 'Sesi Konseling');
+        
+        // ... add student data rows
+        
+        // Generate filename
+        $filename = 'Laporan_Kelas_' . $class['class_name'] . '_' . date('Ymd') . '.xlsx';
+        
+        // Create writer
         $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
-
-        $filename = 'Laporan_Kelas_' . $homeroomClass['class_name'] . '_' . date('Y-m-d') . '.xlsx';
-
+        
+        // Set headers for download
         header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        header('Content-Disposition: attachment;filename="' . $filename . '"');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
         header('Cache-Control: max-age=0');
-
+        
+        // Write to output
         $writer->save('php://output');
         exit;
+        */
     }
 
     /**
-     * Get homeroom class
+     * Get homeroom teacher's class
+     * 
+     * @param int $userId
+     * @return array|null
      */
     private function getHomeroomClass($userId)
     {
-        return $this->classModel
-            ->select('classes.*, academic_years.year_name, academic_years.semester')
-            ->join('academic_years', 'academic_years.id = classes.academic_year_id', 'left')
-            ->where('classes.homeroom_teacher_id', $userId)
-            ->where('classes.is_active', 1)
-            ->where('academic_years.is_active', 1)
-            ->first();
+        try {
+            return $this->db->table('classes')
+                ->select('classes.*, 
+                         academic_years.year_name, 
+                         academic_years.semester,
+                         counselor.full_name as counselor_name')
+                ->join('academic_years', 'academic_years.id = classes.academic_year_id')
+                ->join('users as counselor', 'counselor.id = classes.counselor_id', 'left')
+                ->where('classes.homeroom_teacher_id', $userId)
+                ->where('classes.deleted_at', null)
+                ->where('academic_years.is_active', 1)
+                ->orderBy('classes.created_at', 'DESC')
+                ->get()
+                ->getRowArray();
+        } catch (\Exception $e) {
+            log_message('error', '[HOMEROOM REPORT] Get class error: ' . $e->getMessage());
+            return null;
+        }
     }
 
     /**
-     * Get comprehensive class report
-     * ✅ OPTIMIZED: Simplified queries
+     * Generate comprehensive class report
+     * 
+     * @param int $classId
+     * @param string $startDate
+     * @param string $endDate
+     * @return array
      */
-    private function getClassReport($classId)
+    private function generateClassReport($classId, $startDate, $endDate)
     {
-        return [
-            'students' => $this->getStudentsWithDetails($classId),
-            'student_stats' => $this->getStudentStatistics($classId),
-            'gender_distribution' => $this->getGenderDistribution($classId),
-            'violation_stats' => $this->getViolationStatistics($classId),
-            'session_stats' => $this->getSessionStatistics($classId),
-            'top_violations' => $this->getTopViolations($classId, 5),
-            'students_at_risk' => $this->getStudentsAtRisk($classId, 50),
-            'recent_violations' => $this->getRecentViolations($classId, 30),
-            'violation_trend' => $this->getViolationTrend($classId, 6),
-            'session_attendance' => $this->getSessionAttendance($classId),
-        ];
+        try {
+            $report = [];
+
+            // Get summary statistics
+            $report['summary'] = $this->getReportSummary($classId, $startDate, $endDate);
+
+            // Get student list with details
+            $report['students'] = $this->getStudentDetails($classId, $startDate, $endDate);
+
+            // Get violation summary by severity
+            $report['violationBySeverity'] = $this->getViolationBySeverity($classId, $startDate, $endDate);
+
+            // Get violation summary by category
+            $report['violationByCategory'] = $this->getViolationByCategory($classId, $startDate, $endDate);
+
+            // Get counseling session summary
+            $report['sessionSummary'] = $this->getSessionSummary($classId, $startDate, $endDate);
+
+            // Get top 5 violators
+            $report['topViolators'] = $this->getTopViolators($classId, $startDate, $endDate, 5);
+
+            // Get students needing attention (high violation points)
+            $report['studentsNeedingAttention'] = $this->getStudentsNeedingAttention($classId, 50); // threshold: 50 points
+
+            // Get monthly trends
+            $report['monthlyTrends'] = $this->getMonthlyTrends($classId, 6);
+
+            return $report;
+        } catch (\Exception $e) {
+            log_message('error', '[HOMEROOM REPORT] Generate report error: ' . $e->getMessage());
+            return [
+                'summary' => [],
+                'students' => [],
+                'violationBySeverity' => [],
+                'violationByCategory' => [],
+                'sessionSummary' => [],
+                'topViolators' => [],
+                'studentsNeedingAttention' => [],
+                'monthlyTrends' => [],
+            ];
+        }
     }
 
     /**
-     * ✅ OPTIMIZED: Direct use of students.full_name
+     * Get report summary statistics
+     * 
+     * @param int $classId
+     * @param string $startDate
+     * @param string $endDate
+     * @return array
      */
-    private function getStudentsWithDetails($classId)
+    private function getReportSummary($classId, $startDate, $endDate)
     {
-        $query = "
-            SELECT 
-                s.id,
-                s.nisn,
-                s.full_name,
-                s.gender,
-                s.status,
-                s.total_violation_points as violation_points,
-                u.email,
-                u.phone,
-                COUNT(DISTINCT v.id) as violation_count,
-                COUNT(DISTINCT cs.id) as session_count
-            FROM students s
-            INNER JOIN users u ON u.id = s.user_id
-            LEFT JOIN violations v ON v.student_id = s.id AND v.deleted_at IS NULL
-            LEFT JOIN counseling_sessions cs ON cs.student_id = s.id AND cs.deleted_at IS NULL
-            WHERE s.class_id = ?
-              AND s.status = 'Aktif'
-              AND s.deleted_at IS NULL
-            GROUP BY s.id
-            ORDER BY s.full_name ASC
-        ";
+        $summary = [];
 
-        return $this->db->query($query, [$classId])->getResultArray();
-    }
+        // Total students
+        $summary['total_students'] = $this->db->table('students')
+            ->where('class_id', $classId)
+            ->where('deleted_at', null)
+            ->countAllResults();
 
-    private function getStudentStatistics($classId)
-    {
-        $query = "
-            SELECT 
-                COUNT(*) as total,
-                SUM(CASE WHEN gender = 'L' THEN 1 ELSE 0 END) as male,
-                SUM(CASE WHEN gender = 'P' THEN 1 ELSE 0 END) as female,
-                SUM(CASE WHEN status = 'Aktif' THEN 1 ELSE 0 END) as active
-            FROM students
-            WHERE class_id = ?
-              AND deleted_at IS NULL
-        ";
+        // Total violations in period
+        $summary['total_violations'] = $this->db->table('violations')
+            ->join('students', 'students.id = violations.student_id')
+            ->where('students.class_id', $classId)
+            ->where('violations.violation_date >=', $startDate)
+            ->where('violations.violation_date <=', $endDate)
+            ->where('violations.deleted_at', null)
+            ->countAllResults();
 
-        $result = $this->db->query($query, [$classId])->getRowArray();
+        // Total violation points
+        $pointsResult = $this->db->table('violations')
+            ->select('SUM(violation_categories.points) as total_points')
+            ->join('students', 'students.id = violations.student_id')
+            ->join('violation_categories', 'violation_categories.id = violations.category_id')
+            ->where('students.class_id', $classId)
+            ->where('violations.violation_date >=', $startDate)
+            ->where('violations.violation_date <=', $endDate)
+            ->where('violations.deleted_at', null)
+            ->get()
+            ->getRow();
 
-        return [
-            'total' => (int)($result['total'] ?? 0),
-            'male' => (int)($result['male'] ?? 0),
-            'female' => (int)($result['female'] ?? 0),
-            'active' => (int)($result['active'] ?? 0),
-        ];
-    }
+        $summary['total_points'] = $pointsResult ? ($pointsResult->total_points ?? 0) : 0;
 
-    private function getGenderDistribution($classId)
-    {
-        $genderStats = $this->db->table('students')
+        // Students with violations
+        $summary['students_with_violations'] = $this->db->table('violations')
+            ->select('COUNT(DISTINCT violations.student_id) as count')
+            ->join('students', 'students.id = violations.student_id')
+            ->where('students.class_id', $classId)
+            ->where('violations.violation_date >=', $startDate)
+            ->where('violations.violation_date <=', $endDate)
+            ->where('violations.deleted_at', null)
+            ->get()
+            ->getRow()
+            ->count ?? 0;
+
+        // Total counseling sessions
+        $summary['total_sessions'] = $this->db->table('counseling_sessions')
+            ->join('students', 'students.id = counseling_sessions.student_id')
+            ->where('students.class_id', $classId)
+            ->where('counseling_sessions.session_date >=', $startDate)
+            ->where('counseling_sessions.session_date <=', $endDate)
+            ->where('counseling_sessions.deleted_at', null)
+            ->countAllResults();
+
+        // Students in counseling
+        $summary['students_in_counseling'] = $this->db->table('counseling_sessions')
+            ->select('COUNT(DISTINCT counseling_sessions.student_id) as count')
+            ->join('students', 'students.id = counseling_sessions.student_id')
+            ->where('students.class_id', $classId)
+            ->where('counseling_sessions.session_date >=', $startDate)
+            ->where('counseling_sessions.session_date <=', $endDate)
+            ->where('counseling_sessions.deleted_at', null)
+            ->get()
+            ->getRow()
+            ->count ?? 0;
+
+        // Average violations per student
+        $summary['avg_violations_per_student'] = $summary['total_students'] > 0
+            ? round($summary['total_violations'] / $summary['total_students'], 2)
+            : 0;
+
+        // Gender distribution
+        $genderDist = $this->db->table('students')
             ->select('gender, COUNT(*) as count')
             ->where('class_id', $classId)
-            ->where('status', 'Aktif')
             ->where('deleted_at', null)
             ->groupBy('gender')
             ->get()
             ->getResultArray();
 
-        $distribution = ['L' => 0, 'P' => 0];
+        $summary['gender_distribution'] = [
+            'Laki-laki' => 0,
+            'Perempuan' => 0,
+        ];
 
-        foreach ($genderStats as $stat) {
-            $distribution[$stat['gender']] = (int)$stat['count'];
+        foreach ($genderDist as $gender) {
+            $summary['gender_distribution'][$gender['gender']] = $gender['count'];
         }
 
-        return $distribution;
-    }
-
-    private function getViolationStatistics($classId)
-    {
-        $query = "
-            SELECT 
-                COUNT(*) as total,
-                SUM(CASE WHEN vc.severity_level = 'Ringan' THEN 1 ELSE 0 END) as ringan,
-                SUM(CASE WHEN vc.severity_level = 'Sedang' THEN 1 ELSE 0 END) as sedang,
-                SUM(CASE WHEN vc.severity_level = 'Berat' THEN 1 ELSE 0 END) as berat,
-                SUM(CASE WHEN v.status = 'Selesai' THEN 1 ELSE 0 END) as resolved,
-                SUM(CASE WHEN v.status IN ('Dilaporkan', 'Dalam Proses') THEN 1 ELSE 0 END) as pending
-            FROM violations v
-            INNER JOIN students s ON s.id = v.student_id
-            INNER JOIN violation_categories vc ON vc.id = v.category_id
-            WHERE s.class_id = ?
-              AND s.status = 'Aktif'
-              AND v.deleted_at IS NULL
-        ";
-
-        $result = $this->db->query($query, [$classId])->getRowArray();
-
-        return [
-            'total' => (int)($result['total'] ?? 0),
-            'ringan' => (int)($result['ringan'] ?? 0),
-            'sedang' => (int)($result['sedang'] ?? 0),
-            'berat' => (int)($result['berat'] ?? 0),
-            'resolved' => (int)($result['resolved'] ?? 0),
-            'pending' => (int)($result['pending'] ?? 0),
-        ];
-    }
-
-    private function getSessionStatistics($classId)
-    {
-        $query = "
-            SELECT 
-                COUNT(*) as total,
-                SUM(CASE WHEN cs.status = 'Selesai' THEN 1 ELSE 0 END) as completed,
-                SUM(CASE WHEN cs.status = 'Terjadwal' THEN 1 ELSE 0 END) as scheduled,
-                SUM(CASE WHEN cs.status = 'Dibatalkan' THEN 1 ELSE 0 END) as cancelled
-            FROM counseling_sessions cs
-            INNER JOIN students s ON s.id = cs.student_id
-            WHERE s.class_id = ?
-              AND s.status = 'Aktif'
-              AND cs.deleted_at IS NULL
-        ";
-
-        $result = $this->db->query($query, [$classId])->getRowArray();
-
-        return [
-            'total' => (int)($result['total'] ?? 0),
-            'completed' => (int)($result['completed'] ?? 0),
-            'scheduled' => (int)($result['scheduled'] ?? 0),
-            'cancelled' => (int)($result['cancelled'] ?? 0),
-        ];
-    }
-
-    private function getTopViolations($classId, $limit = 5)
-    {
-        $query = "
-            SELECT 
-                vc.category_name,
-                vc.severity_level,
-                COUNT(*) as total_count
-            FROM violations v
-            INNER JOIN students s ON s.id = v.student_id
-            INNER JOIN violation_categories vc ON vc.id = v.category_id
-            WHERE s.class_id = ?
-              AND s.status = 'Aktif'
-              AND v.deleted_at IS NULL
-            GROUP BY v.category_id
-            ORDER BY total_count DESC
-            LIMIT ?
-        ";
-
-        return $this->db->query($query, [$classId, $limit])->getResultArray();
+        return $summary;
     }
 
     /**
-     * ✅ OPTIMIZED: Using students.total_violation_points directly
+     * Get student details with violation and counseling data
+     * 
+     * @param int $classId
+     * @param string $startDate
+     * @param string $endDate
+     * @return array
      */
-    private function getStudentsAtRisk($classId, $threshold = 50)
+    private function getStudentDetails($classId, $startDate, $endDate)
     {
-        $query = "
-            SELECT 
-                s.id,
-                s.nisn,
-                s.full_name,
-                s.gender,
-                s.status,
-                s.total_violation_points as violation_points,
-                u.email,
-                COUNT(v.id) as violation_count
-            FROM students s
-            INNER JOIN users u ON u.id = s.user_id
-            LEFT JOIN violations v ON v.student_id = s.id AND v.deleted_at IS NULL
-            WHERE s.class_id = ?
-              AND s.status = 'Aktif'
-              AND s.deleted_at IS NULL
-              AND s.total_violation_points >= ?
-            GROUP BY s.id
-            ORDER BY s.total_violation_points DESC
-        ";
+        try {
+            $students = $this->db->table('students')
+                ->select('students.id, students.nisn, students.full_name, students.gender')
+                ->where('students.class_id', $classId)
+                ->where('students.deleted_at', null)
+                ->orderBy('students.full_name', 'ASC')
+                ->get()
+                ->getResultArray();
 
-        return $this->db->query($query, [$classId, $threshold])->getResultArray();
+            // Enrich each student with violation and counseling data
+            foreach ($students as &$student) {
+                // Count violations
+                $violationCount = $this->db->table('violations')
+                    ->where('student_id', $student['id'])
+                    ->where('violation_date >=', $startDate)
+                    ->where('violation_date <=', $endDate)
+                    ->where('deleted_at', null)
+                    ->countAllResults();
+
+                $student['violation_count'] = $violationCount;
+
+                // Sum violation points
+                $pointsResult = $this->db->table('violations')
+                    ->select('SUM(violation_categories.points) as total_points')
+                    ->join('violation_categories', 'violation_categories.id = violations.category_id')
+                    ->where('violations.student_id', $student['id'])
+                    ->where('violations.violation_date >=', $startDate)
+                    ->where('violations.violation_date <=', $endDate)
+                    ->where('violations.deleted_at', null)
+                    ->get()
+                    ->getRow();
+
+                $student['total_points'] = $pointsResult ? ($pointsResult->total_points ?? 0) : 0;
+
+                // Count counseling sessions
+                $sessionCount = $this->db->table('counseling_sessions')
+                    ->where('student_id', $student['id'])
+                    ->where('session_date >=', $startDate)
+                    ->where('session_date <=', $endDate)
+                    ->where('deleted_at', null)
+                    ->countAllResults();
+
+                $student['session_count'] = $sessionCount;
+
+                // Determine status based on points
+                if ($student['total_points'] >= 100) {
+                    $student['status'] = 'Kritis';
+                    $student['status_class'] = 'danger';
+                } elseif ($student['total_points'] >= 50) {
+                    $student['status'] = 'Perlu Perhatian';
+                    $student['status_class'] = 'warning';
+                } elseif ($student['total_points'] > 0) {
+                    $student['status'] = 'Waspada';
+                    $student['status_class'] = 'info';
+                } else {
+                    $student['status'] = 'Baik';
+                    $student['status_class'] = 'success';
+                }
+            }
+
+            return $students;
+        } catch (\Exception $e) {
+            log_message('error', '[HOMEROOM REPORT] Get student details error: ' . $e->getMessage());
+            return [];
+        }
     }
 
     /**
-     * ✅ OPTIMIZED: Direct use of students.full_name
+     * Get violations grouped by severity
+     * 
+     * @param int $classId
+     * @param string $startDate
+     * @param string $endDate
+     * @return array
      */
-    private function getRecentViolations($classId, $days = 30)
+    private function getViolationBySeverity($classId, $startDate, $endDate)
     {
-        $dateFrom = date('Y-m-d', strtotime("-{$days} days"));
-
-        $query = "
-            SELECT 
-                v.*,
-                s.full_name as student_name,
-                vc.category_name,
-                vc.severity_level,
-                u.full_name as reporter_name
-            FROM violations v
-            INNER JOIN students s ON s.id = v.student_id
-            INNER JOIN violation_categories vc ON vc.id = v.category_id
-            LEFT JOIN users u ON u.id = v.reported_by
-            WHERE s.class_id = ?
-              AND s.status = 'Aktif'
-              AND v.violation_date >= ?
-              AND v.deleted_at IS NULL
-            ORDER BY v.violation_date DESC, v.created_at DESC
-            LIMIT 10
-        ";
-
-        return $this->db->query($query, [$classId, $dateFrom])->getResultArray();
+        try {
+            return $this->db->table('violation_categories')
+                ->select('violation_categories.severity, COUNT(violations.id) as count')
+                ->join('violations', 'violations.category_id = violation_categories.id AND violations.deleted_at IS NULL', 'left')
+                ->join('students', 'students.id = violations.student_id', 'left')
+                ->where('students.class_id', $classId)
+                ->where('violations.violation_date >=', $startDate)
+                ->where('violations.violation_date <=', $endDate)
+                ->groupBy('violation_categories.severity')
+                ->get()
+                ->getResultArray();
+        } catch (\Exception $e) {
+            log_message('error', '[HOMEROOM REPORT] Get violation by severity error: ' . $e->getMessage());
+            return [];
+        }
     }
 
-    private function getViolationTrend($classId, $months = 6)
+    /**
+     * Get violations grouped by category
+     * 
+     * @param int $classId
+     * @param string $startDate
+     * @param string $endDate
+     * @return array
+     */
+    private function getViolationByCategory($classId, $startDate, $endDate)
     {
-        $dateFrom = date('Y-m-01', strtotime("-{$months} months"));
-
-        $query = "
-            SELECT 
-                DATE_FORMAT(v.violation_date, '%Y-%m') as month,
-                COUNT(*) as total_count
-            FROM violations v
-            INNER JOIN students s ON s.id = v.student_id
-            WHERE s.class_id = ?
-              AND s.status = 'Aktif'
-              AND v.violation_date >= ?
-              AND v.deleted_at IS NULL
-            GROUP BY month
-            ORDER BY month ASC
-        ";
-
-        return $this->db->query($query, [$classId, $dateFrom])->getResultArray();
+        try {
+            return $this->db->table('violation_categories')
+                ->select('violation_categories.category_name, 
+                         violation_categories.severity,
+                         COUNT(violations.id) as count')
+                ->join('violations', 'violations.category_id = violation_categories.id AND violations.deleted_at IS NULL', 'left')
+                ->join('students', 'students.id = violations.student_id', 'left')
+                ->where('students.class_id', $classId)
+                ->where('violations.violation_date >=', $startDate)
+                ->where('violations.violation_date <=', $endDate)
+                ->groupBy('violation_categories.id')
+                ->orderBy('count', 'DESC')
+                ->limit(10)
+                ->get()
+                ->getResultArray();
+        } catch (\Exception $e) {
+            log_message('error', '[HOMEROOM REPORT] Get violation by category error: ' . $e->getMessage());
+            return [];
+        }
     }
 
-    private function getSessionAttendance($classId)
+    /**
+     * Get counseling session summary
+     * 
+     * @param int $classId
+     * @param string $startDate
+     * @param string $endDate
+     * @return array
+     */
+    private function getSessionSummary($classId, $startDate, $endDate)
     {
-        $query = "
-            SELECT 
-                COUNT(*) as total_sessions,
-                SUM(CASE WHEN cs.status = 'Selesai' THEN 1 ELSE 0 END) as attended,
-                SUM(CASE WHEN cs.status = 'Tidak Hadir' THEN 1 ELSE 0 END) as not_attended
-            FROM counseling_sessions cs
-            INNER JOIN students s ON s.id = cs.student_id
-            WHERE s.class_id = ?
-              AND s.status = 'Aktif'
-              AND cs.status IN ('Selesai', 'Tidak Hadir')
-              AND cs.deleted_at IS NULL
-        ";
+        try {
+            $summary = [];
 
-        $result = $this->db->query($query, [$classId])->getRowArray();
+            // Group by session type
+            $byType = $this->db->table('counseling_sessions')
+                ->select('counseling_sessions.session_type, COUNT(*) as count')
+                ->join('students', 'students.id = counseling_sessions.student_id')
+                ->where('students.class_id', $classId)
+                ->where('counseling_sessions.session_date >=', $startDate)
+                ->where('counseling_sessions.session_date <=', $endDate)
+                ->where('counseling_sessions.deleted_at', null)
+                ->groupBy('counseling_sessions.session_type')
+                ->get()
+                ->getResultArray();
 
-        $totalSessions = (int)($result['total_sessions'] ?? 0);
-        $attended = (int)($result['attended'] ?? 0);
-        $notAttended = (int)($result['not_attended'] ?? 0);
-        $attendanceRate = $totalSessions > 0 ?
-            round(($attended / $totalSessions) * 100, 1) : 0;
+            $summary['by_type'] = $byType;
 
-        return [
-            'total_sessions' => $totalSessions,
-            'attended' => $attended,
-            'not_attended' => $notAttended,
-            'attendance_rate' => $attendanceRate,
-        ];
+            // Group by status
+            $byStatus = $this->db->table('counseling_sessions')
+                ->select('counseling_sessions.status, COUNT(*) as count')
+                ->join('students', 'students.id = counseling_sessions.student_id')
+                ->where('students.class_id', $classId)
+                ->where('counseling_sessions.session_date >=', $startDate)
+                ->where('counseling_sessions.session_date <=', $endDate)
+                ->where('counseling_sessions.deleted_at', null)
+                ->groupBy('counseling_sessions.status')
+                ->get()
+                ->getResultArray();
+
+            $summary['by_status'] = $byStatus;
+
+            return $summary;
+        } catch (\Exception $e) {
+            log_message('error', '[HOMEROOM REPORT] Get session summary error: ' . $e->getMessage());
+            return ['by_type' => [], 'by_status' => []];
+        }
+    }
+
+    /**
+     * Get top violators in period
+     * 
+     * @param int $classId
+     * @param string $startDate
+     * @param string $endDate
+     * @param int $limit
+     * @return array
+     */
+    private function getTopViolators($classId, $startDate, $endDate, $limit = 5)
+    {
+        try {
+            return $this->db->table('students')
+                ->select('students.id, students.nisn, students.full_name,
+                         COUNT(violations.id) as violation_count,
+                         SUM(violation_categories.points) as total_points')
+                ->join('violations', 'violations.student_id = students.id AND violations.deleted_at IS NULL', 'left')
+                ->join('violation_categories', 'violation_categories.id = violations.category_id', 'left')
+                ->where('students.class_id', $classId)
+                ->where('violations.violation_date >=', $startDate)
+                ->where('violations.violation_date <=', $endDate)
+                ->groupBy('students.id')
+                ->having('violation_count >', 0)
+                ->orderBy('total_points', 'DESC')
+                ->orderBy('violation_count', 'DESC')
+                ->limit($limit)
+                ->get()
+                ->getResultArray();
+        } catch (\Exception $e) {
+            log_message('error', '[HOMEROOM REPORT] Get top violators error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Get students needing attention (high violation points)
+     * 
+     * @param int $classId
+     * @param int $threshold
+     * @return array
+     */
+    private function getStudentsNeedingAttention($classId, $threshold = 50)
+    {
+        try {
+            return $this->db->table('students')
+                ->select('students.id, students.nisn, students.full_name,
+                         SUM(violation_categories.points) as total_points,
+                         COUNT(violations.id) as violation_count')
+                ->join('violations', 'violations.student_id = students.id AND violations.deleted_at IS NULL', 'left')
+                ->join('violation_categories', 'violation_categories.id = violations.category_id', 'left')
+                ->where('students.class_id', $classId)
+                ->where('students.deleted_at', null)
+                ->groupBy('students.id')
+                ->having('total_points >=', $threshold)
+                ->orderBy('total_points', 'DESC')
+                ->get()
+                ->getResultArray();
+        } catch (\Exception $e) {
+            log_message('error', '[HOMEROOM REPORT] Get students needing attention error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Get monthly violation trends
+     * 
+     * @param int $classId
+     * @param int $months
+     * @return array
+     */
+    private function getMonthlyTrends($classId, $months = 6)
+    {
+        try {
+            $trends = [];
+
+            for ($i = $months - 1; $i >= 0; $i--) {
+                $month = date('Y-m', strtotime("-{$i} months"));
+                $monthName = date('M Y', strtotime("-{$i} months"));
+
+                $count = $this->db->table('violations')
+                    ->join('students', 'students.id = violations.student_id')
+                    ->where('students.class_id', $classId)
+                    ->where("DATE_FORMAT(violations.violation_date, '%Y-%m')", $month)
+                    ->where('violations.deleted_at', null)
+                    ->countAllResults();
+
+                $trends[] = [
+                    'month' => $monthName,
+                    'month_key' => $month,
+                    'count' => $count,
+                ];
+            }
+
+            return $trends;
+        } catch (\Exception $e) {
+            log_message('error', '[HOMEROOM REPORT] Get monthly trends error: ' . $e->getMessage());
+            return [];
+        }
     }
 }
