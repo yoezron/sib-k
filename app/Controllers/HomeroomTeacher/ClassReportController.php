@@ -87,14 +87,15 @@ class ClassReportController extends BaseController
                 ['title' => 'Laporan Kelas', 'url' => '#', 'active' => true],
             ],
             'class' => $class,
-            'reportData' => $reportData,
+            'report' => $reportData,
             'startDate' => $startDate,
             'endDate' => $endDate,
             'currentUser' => current_user(),
         ];
 
-        return view('homeroom_teacher/reports/index', $data);
+        return view('homeroom_teacher/reports/class_summary', $data);
     }
+
 
     /**
      * Get report data via AJAX
@@ -342,6 +343,102 @@ class ClassReportController extends BaseController
             // Get monthly trends
             $report['monthlyTrends'] = $this->getMonthlyTrends($classId, 6);
 
+            // Get recent violations (last 30 days)
+            $report['recentViolations'] = $this->getRecentViolations($classId, 30);
+            $report['recent_violations'] = $report['recentViolations'];
+
+            // Prepare view-friendly aggregates
+            $summary = $report['summary'] ?? [];
+
+            $severityCounts = [
+                'Ringan' => 0,
+                'Sedang' => 0,
+                'Berat' => 0,
+            ];
+
+            foreach ($report['violationBySeverity'] ?? [] as $severity) {
+                $level = $severity['severity_level'] ?? null;
+                if ($level !== null && array_key_exists($level, $severityCounts)) {
+                    $severityCounts[$level] = (int) $severity['count'];
+                }
+            }
+
+            $statusCounts = [];
+            foreach ($report['sessionSummary']['by_status'] ?? [] as $status) {
+                if (!empty($status['status'])) {
+                    $statusCounts[$status['status']] = (int) $status['count'];
+                }
+            }
+
+            $totalSessions = (int) ($summary['total_sessions'] ?? 0);
+            $completedSessions = $statusCounts['Selesai']
+                ?? $statusCounts['Completed']
+                ?? 0;
+            $scheduledSessions = $statusCounts['Dijadwalkan']
+                ?? $statusCounts['Scheduled']
+                ?? 0;
+
+            $report['student_stats'] = [
+                'total' => (int) ($summary['total_students'] ?? 0),
+                'with_violations' => (int) ($summary['students_with_violations'] ?? 0),
+                'avg_violations' => (float) ($summary['avg_violations_per_student'] ?? 0),
+            ];
+
+            $genderDistribution = $summary['gender_distribution'] ?? [];
+            $report['gender_distribution'] = [
+                'L' => (int) ($genderDistribution['L'] ?? 0),
+                'P' => (int) ($genderDistribution['P'] ?? 0),
+            ];
+
+            $report['violation_stats'] = [
+                'total' => (int) ($summary['total_violations'] ?? 0),
+                'ringan' => $severityCounts['Ringan'],
+                'sedang' => $severityCounts['Sedang'],
+                'berat' => $severityCounts['Berat'],
+            ];
+
+            $report['session_stats'] = [
+                'total' => $totalSessions,
+                'completed' => $completedSessions,
+                'scheduled' => $scheduledSessions,
+            ];
+
+            $attendanceRate = $totalSessions > 0
+                ? round(($completedSessions / $totalSessions) * 100, 1)
+                : 0;
+
+            $report['session_attendance'] = [
+                'attendance_rate' => $attendanceRate,
+                'attended' => $completedSessions,
+                'total_sessions' => $totalSessions,
+            ];
+
+            $report['students_at_risk'] = array_map(static function (array $student): array {
+                $student['violation_points'] = (int) ($student['total_points'] ?? 0);
+                return $student;
+            }, $report['studentsNeedingAttention'] ?? []);
+
+            $report['top_violations'] = array_map(static function (array $item): array {
+                return [
+                    'category_name' => $item['category_name'] ?? '-',
+                    'severity_level' => $item['severity_level'] ?? '-',
+                    'total_count' => (int) ($item['count'] ?? 0),
+                ];
+            }, $report['violationByCategory'] ?? []);
+
+            $report['violation_trend'] = array_map(static function (array $item): array {
+                return [
+                    'month' => $item['month_key'] ?? '',
+                    'label' => $item['month'] ?? '',
+                    'total_count' => (int) ($item['count'] ?? 0),
+                ];
+            }, $report['monthlyTrends'] ?? []);
+
+            $report['students'] = array_map(static function (array $student): array {
+                $student['violation_points'] = (int) ($student['total_points'] ?? 0);
+                return $student;
+            }, $report['students'] ?? []);
+
             return $report;
         } catch (\Exception $e) {
             log_message('error', '[HOMEROOM REPORT] Generate report error: ' . $e->getMessage());
@@ -354,6 +451,15 @@ class ClassReportController extends BaseController
                 'topViolators' => [],
                 'studentsNeedingAttention' => [],
                 'monthlyTrends' => [],
+                'recentViolations' => [],
+                'student_stats' => [],
+                'gender_distribution' => ['L' => 0, 'P' => 0],
+                'violation_stats' => [],
+                'session_stats' => [],
+                'session_attendance' => [],
+                'students_at_risk' => [],
+                'top_violations' => [],
+                'violation_trend' => [],
             ];
         }
     }
@@ -447,12 +553,14 @@ class ClassReportController extends BaseController
             ->getResultArray();
 
         $summary['gender_distribution'] = [
-            'Laki-laki' => 0,
-            'Perempuan' => 0,
+            'L' => 0,
+            'P' => 0,
         ];
 
         foreach ($genderDist as $gender) {
-            $summary['gender_distribution'][$gender['gender']] = $gender['count'];
+            if (!empty($gender['gender']) && isset($summary['gender_distribution'][$gender['gender']])) {
+                $summary['gender_distribution'][$gender['gender']] = (int) $gender['count'];
+            }
         }
 
         return $summary;
@@ -470,7 +578,8 @@ class ClassReportController extends BaseController
     {
         try {
             $students = $this->db->table('students')
-                ->select('students.id, students.nisn, students.full_name, students.gender')
+                ->select('students.id, students.nisn, students.full_name, students.gender, users.email')
+                ->join('users', 'users.id = students.user_id', 'left')
                 ->where('students.class_id', $classId)
                 ->where('students.deleted_at', null)
                 ->orderBy('students.full_name', 'ASC')
@@ -501,6 +610,7 @@ class ClassReportController extends BaseController
                     ->getRow();
 
                 $student['total_points'] = $pointsResult ? ($pointsResult->total_points ?? 0) : 0;
+                $student['violation_points'] = $student['total_points'];
 
                 // Count counseling sessions
                 $sessionCount = $this->db->table('counseling_sessions')
@@ -686,11 +796,13 @@ class ClassReportController extends BaseController
     {
         try {
             return $this->db->table('students')
-                ->select('students.id, students.nisn, students.full_name,
+                ->select('students.id, students.nisn, students.full_name, students.gender,
+                         users.email,
                          SUM(violation_categories.point_deduction) as total_points,
                          COUNT(violations.id) as violation_count')
                 ->join('violations', 'violations.student_id = students.id AND violations.deleted_at IS NULL', 'left')
                 ->join('violation_categories', 'violation_categories.id = violations.category_id', 'left')
+                ->join('users', 'users.id = students.user_id', 'left')
                 ->where('students.class_id', $classId)
                 ->where('students.deleted_at', null)
                 ->groupBy('students.id')
@@ -700,6 +812,36 @@ class ClassReportController extends BaseController
                 ->getResultArray();
         } catch (\Exception $e) {
             log_message('error', '[HOMEROOM REPORT] Get students needing attention error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Get recent violations within given days
+     *
+     * @param int $classId
+     * @param int $days
+     * @return array
+     */
+    private function getRecentViolations($classId, $days = 30)
+    {
+        try {
+            return $this->db->table('violations')
+                ->select('violations.violation_date, violations.description,
+                         students.full_name as student_name, students.nisn,
+                         violation_categories.category_name, violation_categories.severity_level')
+                ->join('students', 'students.id = violations.student_id')
+                ->join('violation_categories', 'violation_categories.id = violations.category_id')
+                ->where('students.class_id', $classId)
+                ->where('violations.violation_date >=', date('Y-m-d', strtotime("-{$days} days")))
+                ->where('violations.deleted_at', null)
+                ->orderBy('violations.violation_date', 'DESC')
+                ->orderBy('violations.created_at', 'DESC')
+                ->limit(20)
+                ->get()
+                ->getResultArray();
+        } catch (\Exception $e) {
+            log_message('error', '[HOMEROOM REPORT] Get recent violations error: ' . $e->getMessage());
             return [];
         }
     }

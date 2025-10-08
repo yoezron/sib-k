@@ -883,3 +883,81 @@ in SYSTEMPATH\Exceptions\FrameworkException.php on line 39.
  8 SYSTEMPATH\Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
  9 FCPATH\index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
 10 SYSTEMPATH\rewrite.php(44): require_once('C:\\laragon\\www\\sib-k\\public\\index.php')
+DEBUG - 2025-10-08 11:01:32 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2025-10-08 11:01:34 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+CRITICAL - 2025-10-08 11:01:35 --> CodeIgniter\View\Exceptions\ViewException: Invalid file: "homeroom_teacher/reports/index.php"
+[Method: GET, Route: homeroom/reports]
+in SYSTEMPATH\Exceptions\FrameworkException.php on line 39.
+ 1 SYSTEMPATH\View\View.php(214): CodeIgniter\Exceptions\FrameworkException::forInvalidFile('homeroom_teacher/reports/index.php')
+ 2 SYSTEMPATH\Common.php(1167): CodeIgniter\View\View->render('homeroom_teacher/reports/index', [], true)
+ 3 APPPATH\Controllers\HomeroomTeacher\ClassReportController.php(96): view('homeroom_teacher/reports/index', [...])
+ 4 SYSTEMPATH\CodeIgniter.php(933): App\Controllers\HomeroomTeacher\ClassReportController->index()
+ 5 SYSTEMPATH\CodeIgniter.php(507): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\HomeroomTeacher\ClassReportController))
+ 6 SYSTEMPATH\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+ 7 SYSTEMPATH\Boot.php(363): CodeIgniter\CodeIgniter->run()
+ 8 SYSTEMPATH\Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+ 9 FCPATH\index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+10 SYSTEMPATH\rewrite.php(44): require_once('C:\\laragon\\www\\sib-k\\public\\index.php')
+DEBUG - 2025-10-08 11:01:37 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+CRITICAL - 2025-10-08 11:01:37 --> CodeIgniter\View\Exceptions\ViewException: Invalid file: "homeroom_teacher/reports/index.php"
+[Method: GET, Route: homeroom/reports]
+in SYSTEMPATH\Exceptions\FrameworkException.php on line 39.
+ 1 SYSTEMPATH\View\View.php(214): CodeIgniter\Exceptions\FrameworkException::forInvalidFile('homeroom_teacher/reports/index.php')
+ 2 SYSTEMPATH\Common.php(1167): CodeIgniter\View\View->render('homeroom_teacher/reports/index', [], true)
+ 3 APPPATH\Controllers\HomeroomTeacher\ClassReportController.php(96): view('homeroom_teacher/reports/index', [...])
+ 4 SYSTEMPATH\CodeIgniter.php(933): App\Controllers\HomeroomTeacher\ClassReportController->index()
+ 5 SYSTEMPATH\CodeIgniter.php(507): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\HomeroomTeacher\ClassReportController))
+ 6 SYSTEMPATH\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+ 7 SYSTEMPATH\Boot.php(363): CodeIgniter\CodeIgniter->run()
+ 8 SYSTEMPATH\Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+ 9 FCPATH\index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+10 SYSTEMPATH\rewrite.php(44): require_once('C:\\laragon\\www\\sib-k\\public\\index.php')
+DEBUG - 2025-10-08 11:01:51 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+WARNING - 2025-10-08 11:01:51 --> [DEPRECATED] round(): Passing null to parameter #1 ($num) of type int|float is deprecated in APPPATH\Controllers\HomeroomTeacher\DashboardController.php on line 240.
+ 1 APPPATH\Controllers\HomeroomTeacher\DashboardController.php(240): round(null, 1)
+ 2 APPPATH\Controllers\HomeroomTeacher\DashboardController.php(84): App\Controllers\HomeroomTeacher\DashboardController->getClassStatistics('1')
+ 3 SYSTEMPATH\CodeIgniter.php(933): App\Controllers\HomeroomTeacher\DashboardController->index()
+ 4 SYSTEMPATH\CodeIgniter.php(507): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\HomeroomTeacher\DashboardController))
+ 5 SYSTEMPATH\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+ 6 SYSTEMPATH\Boot.php(363): CodeIgniter\CodeIgniter->run()
+ 7 SYSTEMPATH\Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+ 8 FCPATH\index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+ 9 SYSTEMPATH\rewrite.php(44): require_once('C:\\laragon\\www\\sib-k\\public\\index.php')
+DEBUG - 2025-10-08 11:01:53 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2025-10-08 11:31:25 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2025-10-08 11:31:59 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2025-10-08 11:32:02 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2025-10-08 11:32:52 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2025-10-08 11:36:01 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2025-10-08 11:36:02 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2025-10-08 11:37:02 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2025-10-08 11:37:04 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2025-10-08 11:37:28 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+WARNING - 2025-10-08 11:37:28 --> [DEPRECATED] round(): Passing null to parameter #1 ($num) of type int|float is deprecated in APPPATH\Controllers\HomeroomTeacher\DashboardController.php on line 240.
+ 1 APPPATH\Controllers\HomeroomTeacher\DashboardController.php(240): round(null, 1)
+ 2 APPPATH\Controllers\HomeroomTeacher\DashboardController.php(84): App\Controllers\HomeroomTeacher\DashboardController->getClassStatistics('1')
+ 3 SYSTEMPATH\CodeIgniter.php(933): App\Controllers\HomeroomTeacher\DashboardController->index()
+ 4 SYSTEMPATH\CodeIgniter.php(507): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\HomeroomTeacher\DashboardController))
+ 5 SYSTEMPATH\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+ 6 SYSTEMPATH\Boot.php(363): CodeIgniter\CodeIgniter->run()
+ 7 SYSTEMPATH\Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+ 8 FCPATH\index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+ 9 SYSTEMPATH\rewrite.php(44): require_once('C:\\laragon\\www\\sib-k\\public\\index.php')
+DEBUG - 2025-10-08 11:37:35 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2025-10-08 11:37:38 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2025-10-08 11:42:51 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2025-10-08 11:42:58 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2025-10-08 11:42:58 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+WARNING - 2025-10-08 11:42:58 --> [DEPRECATED] round(): Passing null to parameter #1 ($num) of type int|float is deprecated in APPPATH\Controllers\HomeroomTeacher\DashboardController.php on line 240.
+ 1 APPPATH\Controllers\HomeroomTeacher\DashboardController.php(240): round(null, 1)
+ 2 APPPATH\Controllers\HomeroomTeacher\DashboardController.php(84): App\Controllers\HomeroomTeacher\DashboardController->getClassStatistics('1')
+ 3 SYSTEMPATH\CodeIgniter.php(933): App\Controllers\HomeroomTeacher\DashboardController->index()
+ 4 SYSTEMPATH\CodeIgniter.php(507): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\HomeroomTeacher\DashboardController))
+ 5 SYSTEMPATH\CodeIgniter.php(354): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+ 6 SYSTEMPATH\Boot.php(363): CodeIgniter\CodeIgniter->run()
+ 7 SYSTEMPATH\Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+ 8 FCPATH\index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+ 9 SYSTEMPATH\rewrite.php(44): require_once('C:\\laragon\\www\\sib-k\\public\\index.php')
+DEBUG - 2025-10-08 11:43:08 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2025-10-08 11:43:10 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
+DEBUG - 2025-10-08 11:44:26 --> Session: Class initialized using 'CodeIgniter\Session\Handlers\FileHandler' driver.
